@@ -105,7 +105,7 @@ function ProjectsPage() {
             key={p.id}
             to="/app/board"
             className="surface-card hover-lift block p-6"
-            style={{ animation: `fade-up .6s cubic-bezier(.22,1,.36,1) ${i * 70}ms both` }}
+            style={{ animation: `fade-up .28s cubic-bezier(.22,1,.36,1) ${Math.min(i * 20, 100)}ms both` }}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">

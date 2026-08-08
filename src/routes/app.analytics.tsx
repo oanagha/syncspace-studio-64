@@ -79,7 +79,7 @@ function AnalyticsPage() {
           <div
             key={s.label}
             className="surface-card hover-lift p-5"
-            style={{ animation: `fade-up .5s cubic-bezier(.22,1,.36,1) ${i * 70}ms both` }}
+            style={{ animation: `fade-up .28s cubic-bezier(.22,1,.36,1) ${Math.min(i * 20, 100)}ms both` }}
           >
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {s.label}

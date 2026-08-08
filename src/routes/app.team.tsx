@@ -168,7 +168,7 @@ function TeamPage() {
             <div
               key={m.id}
               className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-6 py-4 transition-colors hover:bg-muted/40 sm:grid-cols-[minmax(0,2fr)_1fr_1fr_auto]"
-              style={{ animation: `fade-up .5s cubic-bezier(.22,1,.36,1) ${i * 60}ms both` }}
+              style={{ animation: `fade-up .28s cubic-bezier(.22,1,.36,1) ${Math.min(i * 20, 100)}ms both` }}
             >
               <div className="flex min-w-0 items-center gap-3">
                 <span

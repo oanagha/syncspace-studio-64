@@ -123,7 +123,7 @@ function FilesPage() {
               key={f.id}
               onClick={() => toast(f.name, { description: `${f.kind} · ${f.size} · updated ${f.updated}` })}
               className="surface-card hover-lift cursor-pointer overflow-hidden"
-              style={{ animation: `fade-up .5s cubic-bezier(.22,1,.36,1) ${i * 60}ms both` }}
+              style={{ animation: `fade-up .28s cubic-bezier(.22,1,.36,1) ${Math.min(i * 20, 100)}ms both` }}
             >
               <div
                 className="grid h-32 place-items-center"
