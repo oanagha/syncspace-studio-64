@@ -27,13 +27,7 @@ export const Route = createFileRoute("/app/")({
 
 
 function Dashboard() {
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
-  }, []);
 
-  if (loading) return <DashboardSkeleton />;
 
   const dueToday = tasks.filter((t) => t.column !== "Done").slice(0, 4);
   const total = donutData.reduce((s, d) => s + d.value, 0);
