@@ -37,7 +37,7 @@ function Dashboard() {
       {/* Editorial header */}
       <header
         className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-6 border-b-2 border-accent/30 pb-8"
-        style={{ animation: "fade-up .6s cubic-bezier(.22,1,.36,1) both" }}
+        style={{ animation: "fade-up .28s cubic-bezier(.22,1,.36,1) both" }}
       >
         <div className="min-w-0 space-y-1">
           <h1 className="heading-elegant text-4xl uppercase leading-[0.95] tracking-tighter text-primary sm:text-5xl xl:text-6xl">
@@ -65,7 +65,7 @@ function Dashboard() {
         <div className="space-y-8 md:col-span-8">
           <section
             className="surface-card overflow-hidden rounded-3xl p-6 sm:p-8"
-            style={{ animation: "fade-up .6s cubic-bezier(.22,1,.36,1) 80ms both" }}
+            style={{ animation: "fade-up .28s cubic-bezier(.22,1,.36,1) 30ms both" }}
           >
             <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -131,7 +131,7 @@ function Dashboard() {
                       ? "bg-secondary text-secondary-foreground"
                       : "border border-accent/25 bg-card"
                 }`}
-                style={{ animation: `fade-up .5s cubic-bezier(.22,1,.36,1) ${140 + i * 60}ms both` }}
+                style={{ animation: `fade-up .28s cubic-bezier(.22,1,.36,1) ${Math.min(i * 25, 100)}ms both` }}
               >
                 <p
                   className={`mb-1 text-[10px] font-bold uppercase tracking-[0.18em] ${
@@ -149,7 +149,7 @@ function Dashboard() {
 
           {/* Projects + activity */}
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-            <div className="space-y-4" style={{ animation: "fade-up .6s cubic-bezier(.22,1,.36,1) 360ms both" }}>
+            <div className="space-y-4" style={{ animation: "fade-up .28s cubic-bezier(.22,1,.36,1) 90ms both" }}>
               <div className="flex items-center justify-between">
                 <h2 className="heading-dot text-base uppercase tracking-tight text-primary sm:text-lg">Active projects</h2>
                 <Link to="/app/projects" className="text-[10px] font-bold uppercase tracking-widest text-secondary hover:underline">
@@ -180,7 +180,7 @@ function Dashboard() {
               </div>
             </div>
 
-            <div className="space-y-4" style={{ animation: "fade-up .6s cubic-bezier(.22,1,.36,1) 420ms both" }}>
+            <div className="space-y-4" style={{ animation: "fade-up .28s cubic-bezier(.22,1,.36,1) 100ms both" }}>
               <h2 className="heading-dot text-base uppercase tracking-tight text-primary sm:text-lg">Team activity</h2>
               <div className="space-y-4">
                 {activity.slice(0, 5).map((a) => {
@@ -213,7 +213,7 @@ function Dashboard() {
         <div className="space-y-8 md:col-span-4">
           <section
             className="surface-card rounded-3xl p-6 sm:p-8"
-            style={{ animation: "fade-up .6s cubic-bezier(.22,1,.36,1) 160ms both" }}
+            style={{ animation: "fade-up .28s cubic-bezier(.22,1,.36,1) 60ms both" }}
           >
             <h2 className="heading-dot text-xs font-bold uppercase tracking-[0.2em] text-primary">Task distribution</h2>
             <div className="relative mx-auto mt-6 h-44 w-44">
@@ -249,7 +249,7 @@ function Dashboard() {
 
           <section
             className="rounded-3xl bg-primary p-6 text-primary-foreground sm:p-8"
-            style={{ animation: "fade-up .6s cubic-bezier(.22,1,.36,1) 220ms both" }}
+            style={{ animation: "fade-up .28s cubic-bezier(.22,1,.36,1) 80ms both" }}
           >
             <h2 className="heading-dot text-xs font-bold uppercase tracking-[0.2em] text-accent">Due today</h2>
             <div className="space-y-6">

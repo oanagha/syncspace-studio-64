@@ -199,6 +199,7 @@ export function AppShell() {
               <Link
                 key={item.to}
                 to={item.to}
+                preload="render"
                 className={cn(
                   "group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all duration-300",
                   active
@@ -336,7 +337,11 @@ export function AppShell() {
           </div>
         </header>
 
-        <main key={pathname} className="animate-fade-up px-4 pb-28 pt-6 sm:px-6 lg:px-8">
+        <main
+          key={pathname}
+          className="px-4 pb-28 pt-6 sm:px-6 lg:px-8"
+          style={{ animation: "fade-up .22s cubic-bezier(.22,1,.36,1) both" }}
+        >
           <Outlet />
         </main>
       </div>
@@ -348,6 +353,7 @@ export function AppShell() {
             <Link
               key={item.to}
               to={item.to}
+              preload="render"
               className={cn(
                 "flex flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-[10px] font-semibold",
                 active ? "text-primary" : "text-muted-foreground",
