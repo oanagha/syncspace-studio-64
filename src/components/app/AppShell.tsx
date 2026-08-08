@@ -157,17 +157,6 @@ export function AppShell() {
           </div>
         )}
 
-        <div className="p-3">
-          <Button
-            variant="ghost"
-            size={collapsed ? "icon" : "default"}
-            className={cn("w-full text-muted-foreground", collapsed && "w-10")}
-            onClick={() => setCollapsed((c) => !c)}
-          >
-            {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
-            {!collapsed && <span>Collapse</span>}
-          </Button>
-        </div>
       </aside>
 
       <div className={cn("transition-[padding] duration-500", collapsed ? "lg:pl-[76px]" : "lg:pl-[264px]")}>
