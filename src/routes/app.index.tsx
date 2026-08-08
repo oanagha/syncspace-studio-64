@@ -40,8 +40,9 @@ function Dashboard() {
         style={{ animation: "fade-up .28s cubic-bezier(.22,1,.36,1) both" }}
       >
         <div className="min-w-0 space-y-1">
-          <h1 className="heading-elegant text-4xl uppercase leading-[0.95] tracking-tighter text-primary sm:text-5xl xl:text-6xl">
-            System: <span className="gradient-text">Optimal</span>
+          <h1 className="font-[family-name:var(--font-display)] text-3xl uppercase leading-[1.05] tracking-tight text-foreground sm:text-4xl">
+            <span className="text-muted-foreground">System:</span>{" "}
+            <span className="gradient-text">Optimal</span>
           </h1>
           <p className="text-base text-muted-foreground sm:text-lg">
             Good morning, Ava. 7 tasks due today, 3 reviews waiting.
