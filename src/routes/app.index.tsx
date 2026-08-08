@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+
 import {
   Area,
   AreaChart,
@@ -27,13 +27,7 @@ export const Route = createFileRoute("/app/")({
 
 
 function Dashboard() {
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
-  }, []);
 
-  if (loading) return <DashboardSkeleton />;
 
   const dueToday = tasks.filter((t) => t.column !== "Done").slice(0, 4);
   const total = donutData.reduce((s, d) => s + d.value, 0);
@@ -291,24 +285,3 @@ function Dashboard() {
   );
 }
 
-function DashboardSkeleton() {
-  return (
-    <div className="mx-auto max-w-7xl space-y-8">
-      <div className="h-28 rounded-2xl skeleton-shimmer" />
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
-        <div className="space-y-8 md:col-span-8">
-          <div className="h-80 rounded-3xl skeleton-shimmer" />
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-24 rounded-2xl skeleton-shimmer" />
-            ))}
-          </div>
-        </div>
-        <div className="space-y-8 md:col-span-4">
-          <div className="h-80 rounded-3xl skeleton-shimmer" />
-          <div className="h-60 rounded-3xl skeleton-shimmer" />
-        </div>
-      </div>
-    </div>
-  );
-}

@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { Check } from "lucide-react";
 import { Bell, Link2, Palette, Shield, SlidersHorizontal, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,19 +131,8 @@ function SettingsPage() {
 
         <TabsContent value="appearance">
           <Card title="Appearance" desc="Tune density and accent to match how you work.">
-            <div className="space-y-2">
-              <Label>Accent color</Label>
-              <div className="flex flex-wrap gap-3">
-                {["#1A4A6E", "#2D8A9E", "#5CBDB9", "#2F9E7D", "#D9A441"].map((c, i) => (
-                  <button
-                    key={c}
-                    className="size-10 rounded-2xl ring-offset-2 transition-transform hover:scale-110"
-                    style={{ background: c, boxShadow: i === 0 ? "0 0 0 2px var(--card), 0 0 0 4px " + c : undefined }}
-                    aria-label={`Accent ${c}`}
-                  />
-                ))}
-              </div>
-            </div>
+            <AccentPicker />
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Density</Label>
@@ -246,6 +237,56 @@ function SaveRow() {
     <div className="flex justify-end gap-2">
       <Button variant="ghost">Cancel</Button>
       <Button variant="hero">Save changes</Button>
+    </div>
+  );
+}
+
+const accents = [
+  { name: "Ocean", hex: "#1A4A6E", primary: "oklch(0.42 0.078 240)", accent: "oklch(0.746 0.069 187)" },
+  { name: "Teal", hex: "#2D8A9E", primary: "oklch(0.55 0.085 215)", accent: "oklch(0.76 0.075 195)" },
+  { name: "Aqua", hex: "#5CBDB9", primary: "oklch(0.63 0.075 190)", accent: "oklch(0.8 0.07 185)" },
+  { name: "Emerald", hex: "#2F9E7D", primary: "oklch(0.58 0.095 168)", accent: "oklch(0.76 0.08 165)" },
+  { name: "Amber", hex: "#D9A441", primary: "oklch(0.62 0.12 82)", accent: "oklch(0.8 0.1 88)" },
+];
+
+function AccentPicker() {
+  const [active, setActive] = useState(accents[0]!.name);
+
+  const apply = (a: (typeof accents)[number]) => {
+    setActive(a.name);
+    const root = document.documentElement;
+    root.style.setProperty("--primary", a.primary);
+    root.style.setProperty("--ring", a.primary);
+    root.style.setProperty("--accent", a.accent);
+    root.style.setProperty("--chart-1", a.primary);
+    root.style.setProperty("--sidebar-primary", a.primary);
+    root.style.setProperty(
+      "--gradient-brand",
+      `linear-gradient(120deg, color-mix(in oklab, ${a.primary} 78%, black), ${a.primary} 45%, ${a.accent})`,
+    );
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label>Accent color</Label>
+      <div className="flex flex-wrap gap-3">
+        {accents.map((a) => (
+          <button
+            key={a.name}
+            type="button"
+            onClick={() => apply(a)}
+            className="grid size-10 place-items-center rounded-2xl transition-transform hover:scale-110"
+            style={{
+              background: a.hex,
+              boxShadow: active === a.name ? `0 0 0 2px var(--card), 0 0 0 4px ${a.hex}` : undefined,
+            }}
+            aria-label={`Accent ${a.name}`}
+            aria-pressed={active === a.name}
+          >
+            {active === a.name && <Check className="size-4" style={{ color: "#fff" }} />}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
