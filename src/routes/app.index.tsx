@@ -80,7 +80,7 @@ function Dashboard() {
           >
             <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg uppercase tracking-tight text-primary sm:text-xl">System throughput</h2>
+                <h2 className="heading-dot text-lg uppercase tracking-tight text-primary sm:text-xl">System throughput</h2>
                 <p className="text-[11px] font-bold uppercase tracking-widest text-secondary/70">Live telemetry</p>
               </div>
               <div className="flex gap-5 text-[10px] font-bold uppercase tracking-widest">
