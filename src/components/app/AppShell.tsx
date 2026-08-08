@@ -75,9 +75,20 @@ export function AppShell() {
           collapsed ? "w-[76px]" : "w-[264px]",
         )}
       >
-        <div className="flex h-16 items-center gap-2 px-4">
+        <div className={cn("flex h-16 items-center gap-2 px-4", collapsed && "flex-col justify-center gap-1 px-2")}>
           <Link to="/">{collapsed ? <Logo mark /> : <Logo />}</Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-auto size-8 shrink-0 text-muted-foreground"
+            onClick={() => setCollapsed((c) => !c)}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+          </Button>
         </div>
+
 
         <div className="px-3">
           <DropdownMenu>
