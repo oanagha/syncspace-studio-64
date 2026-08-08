@@ -16,6 +16,7 @@ import { Route as SigninRouteImport } from './routes/signin'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppBoardRouteImport } from './routes/app.board'
+import { Route as AppFilesRouteImport } from './routes/app.files'
 import { Route as AppProjectsRouteImport } from './routes/app.projects'
 import { Route as AppTeamRouteImport } from './routes/app.team'
 
@@ -54,6 +55,11 @@ const AppBoardRoute = AppBoardRouteImport.update({
   path: '/board',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFilesRoute = AppFilesRouteImport.update({
+  id: '/files',
+  path: '/files',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProjectsRoute = AppProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
   '/app/board': typeof AppBoardRoute
+  '/app/files': typeof AppFilesRoute
   '/app/projects': typeof AppProjectsRoute
   '/app/team': typeof AppTeamRoute
   '/app/': typeof AppIndexRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
   '/app/board': typeof AppBoardRoute
+  '/app/files': typeof AppFilesRoute
   '/app/projects': typeof AppProjectsRoute
   '/app/team': typeof AppTeamRoute
   '/app': typeof AppIndexRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
   '/app/board': typeof AppBoardRoute
+  '/app/files': typeof AppFilesRoute
   '/app/projects': typeof AppProjectsRoute
   '/app/team': typeof AppTeamRoute
   '/app/': typeof AppIndexRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/signup'
     | '/app/board'
+    | '/app/files'
     | '/app/projects'
     | '/app/team'
     | '/app/'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/signup'
     | '/app/board'
+    | '/app/files'
     | '/app/projects'
     | '/app/team'
     | '/app'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/signup'
     | '/app/board'
+    | '/app/files'
     | '/app/projects'
     | '/app/team'
     | '/app/'
@@ -192,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBoardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/files': {
+      id: '/app/files'
+      path: '/files'
+      fullPath: '/app/files'
+      preLoaderRoute: typeof AppFilesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/projects': {
       id: '/app/projects'
       path: '/projects'
@@ -211,6 +230,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppBoardRoute: typeof AppBoardRoute
+  AppFilesRoute: typeof AppFilesRoute
   AppProjectsRoute: typeof AppProjectsRoute
   AppTeamRoute: typeof AppTeamRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -218,6 +238,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppBoardRoute: AppBoardRoute,
+  AppFilesRoute: AppFilesRoute,
   AppProjectsRoute: AppProjectsRoute,
   AppTeamRoute: AppTeamRoute,
   AppIndexRoute: AppIndexRoute,
