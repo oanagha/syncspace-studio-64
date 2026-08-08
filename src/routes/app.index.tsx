@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { Counter } from "@/components/ux/motion";
-import { activity, donutData, files, memberOf, projects, tasks, weeklyData } from "@/lib/data";
+import { activity, donutData, memberOf, projects, tasks, weeklyData } from "@/lib/data";
 
 export const Route = createFileRoute("/app/")({
   head: () => ({
