@@ -38,7 +38,7 @@ import {
 import { members, notifications, projects, workspaces } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
-const nav = [
+const nav: { to: string; label: string; icon: React.ComponentType<{ className?: string }>; exact?: boolean }[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/app/projects", label: "Projects", icon: FolderKanban },
   { to: "/app/board", label: "Kanban board", icon: SquareKanban },
@@ -46,7 +46,7 @@ const nav = [
   { to: "/app/files", label: "Files", icon: Files },
   { to: "/app/analytics", label: "Analytics", icon: Gauge },
   { to: "/app/settings", label: "Settings", icon: Settings },
-] as const;
+];
 
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
