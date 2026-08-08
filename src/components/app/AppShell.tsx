@@ -199,6 +199,7 @@ export function AppShell() {
               <Link
                 key={item.to}
                 to={item.to}
+                preload="render"
                 className={cn(
                   "group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all duration-300",
                   active
@@ -348,6 +349,7 @@ export function AppShell() {
             <Link
               key={item.to}
               to={item.to}
+              preload="render"
               className={cn(
                 "flex flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-[10px] font-semibold",
                 active ? "text-primary" : "text-muted-foreground",
