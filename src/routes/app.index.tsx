@@ -240,7 +240,7 @@ function Dashboard() {
         </Tile>
 
         {/* Projects */}
-        <Tile className="md:col-span-2 xl:col-span-3" delay={500}>
+        <Tile className="md:col-span-2 xl:col-span-2" delay={500}>
           <div className="mb-4 flex items-center justify-between">
             <TileHead title="Active projects" />
             <Link to="/app/projects" className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
@@ -300,7 +300,7 @@ function Dashboard() {
         </Tile>
 
         {/* Files */}
-        <Tile className="md:col-span-4 xl:col-span-1" delay={580}>
+        <Tile className="md:col-span-4 xl:col-span-2" delay={580}>
           <TileHead title="Files" />
           <ul className="space-y-3">
             {files.slice(0, 4).map((f) => (
