@@ -222,32 +222,33 @@
   position: relative;
   display: inline-block;
   letter-spacing: 0.02em;
-}
-@utility heading-elegant::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -0.2em;
-  width: 1.6em;
-  height: 0.12em;
-  border-radius: 999px;
-  background: var(--gradient-brand);
-  opacity: 0.7;
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.2em;
+    width: 1.6em;
+    height: 0.12em;
+    border-radius: 999px;
+    background: var(--gradient-brand);
+    opacity: 0.7;
+  }
 }
 
 @utility heading-dot {
   display: inline-flex;
   align-items: center;
   gap: 0.55em;
+  &::before {
+    content: "";
+    width: 0.42em;
+    height: 0.42em;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent);
+  }
 }
-@utility heading-dot::before {
-  content: "";
-  width: 0.42em;
-  height: 0.42em;
-  border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent);
-}
+
 
 @utility glass {
   background: color-mix(in oklab, white 72%, transparent);
