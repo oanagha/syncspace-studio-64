@@ -13,8 +13,6 @@ import {
   Settings,
   SquareKanban,
   Users,
-  PanelLeftClose,
-  PanelLeftOpen,
   Check,
   UserPlus,
   CloudUpload,
@@ -133,18 +131,16 @@ export function AppShell() {
           collapsed ? "w-[76px]" : "w-[264px]",
         )}
       >
-        <div className={cn("flex h-16 items-center gap-2 px-4", collapsed && "flex-col justify-center gap-1 px-2")}>
-          <Link to="/">{collapsed ? <Logo mark /> : <Logo />}</Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="ml-auto size-8 shrink-0 text-muted-foreground"
+        <div className={cn("flex h-16 items-center px-4", collapsed && "justify-center px-2")}>
+          <button
+            type="button"
             onClick={() => setCollapsed((c) => !c)}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="rounded-2xl transition-transform hover:scale-[1.03]"
           >
-            {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
-          </Button>
+            {collapsed ? <Logo mark /> : <Logo />}
+          </button>
         </div>
 
         <div className="px-3">
@@ -333,7 +329,7 @@ export function AppShell() {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="rounded-xl">
-                  <Link to="/signin">Sign out</Link>
+                  <Link to="/">Sign out</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
