@@ -283,7 +283,7 @@ function AccentPicker() {
             aria-label={`Accent ${a.name}`}
             aria-pressed={active === a.name}
           >
-            {active === a.name && <Check className="size-4 text-white" />}
+            {active === a.name && <Check className="size-4" style={{ color: "#fff" }} />}
           </button>
         ))}
       </div>
