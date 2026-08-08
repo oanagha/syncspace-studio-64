@@ -38,15 +38,15 @@ import {
 import { members, notifications, projects, workspaces } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
-const nav: { to: string; label: string; icon: React.ComponentType<{ className?: string }>; exact?: boolean }[] = [
+const nav = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/app/projects", label: "Projects", icon: FolderKanban },
-  { to: "/app/board", label: "Kanban board", icon: SquareKanban },
-  { to: "/app/team", label: "Team", icon: Users },
-  { to: "/app/files", label: "Files", icon: Files },
-  { to: "/app/analytics", label: "Analytics", icon: Gauge },
-  { to: "/app/settings", label: "Settings", icon: Settings },
-];
+  { to: "/app/projects", label: "Projects", icon: FolderKanban, exact: false },
+  { to: "/app/board", label: "Kanban board", icon: SquareKanban, exact: false },
+  { to: "/app/team", label: "Team", icon: Users, exact: false },
+  { to: "/app/files", label: "Files", icon: Files, exact: false },
+  { to: "/app/analytics", label: "Analytics", icon: Gauge, exact: false },
+  { to: "/app/settings", label: "Settings", icon: Settings, exact: false },
+] as const;
 
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
