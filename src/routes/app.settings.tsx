@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { useState } from "react";
 import { Check } from "lucide-react";
 import { Bell, Link2, Palette, Shield, SlidersHorizontal, User } from "lucide-react";
@@ -65,8 +66,8 @@ function SettingsPage() {
                 AM
               </span>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">Upload photo</Button>
-                <Button variant="ghost" size="sm">Remove</Button>
+                <Button variant="outline" size="sm" onClick={() => toast.success("Photo updated")}>Upload photo</Button>
+                <Button variant="ghost" size="sm" onClick={() => toast.success("Photo removed")}>Remove</Button>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -110,7 +111,7 @@ function SettingsPage() {
                     <p className="text-sm font-semibold">{d}</p>
                     <p className="text-xs text-muted-foreground">{t}</p>
                   </div>
-                  <Button variant="ghost" size="sm">Revoke</Button>
+                  <Button variant="ghost" size="sm" onClick={() => toast.success(`Signed out of ${d}`)}>Revoke</Button>
                 </div>
               ))}
             </div>
@@ -187,7 +188,11 @@ function SettingsPage() {
                   <p className="text-sm font-bold">{name}</p>
                   <p className="truncate text-xs text-muted-foreground">{desc}</p>
                 </div>
-                <Button variant={on ? "outline" : "hero"} size="sm">
+                <Button
+                  variant={on ? "outline" : "hero"}
+                  size="sm"
+                  onClick={() => toast.success(`${name} ${on ? "disconnected" : "connected"}`)}
+                >
                   {on ? "Disconnect" : "Connect"}
                 </Button>
               </div>
@@ -235,8 +240,8 @@ function Toggle({ label, desc, defaultOn }: { label: string; desc: string; defau
 function SaveRow() {
   return (
     <div className="flex justify-end gap-2">
-      <Button variant="ghost">Cancel</Button>
-      <Button variant="hero">Save changes</Button>
+      <Button variant="ghost" onClick={() => toast("Changes discarded")}>Cancel</Button>
+      <Button variant="hero" onClick={() => toast.success("Settings saved")}>Save changes</Button>
     </div>
   );
 }

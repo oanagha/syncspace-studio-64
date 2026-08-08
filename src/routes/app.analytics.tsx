@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { useState } from "react";
 import {
   Bar,
@@ -191,8 +192,8 @@ function AnalyticsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">Export PDF</Button>
-          <Button variant="hero">Schedule digest</Button>
+          <Button variant="outline" onClick={() => toast.success("Report exported as PDF")}>Export PDF</Button>
+          <Button variant="hero" onClick={() => toast.success("Weekly digest scheduled for Mondays 9am")}>Schedule digest</Button>
         </div>
       </section>
 

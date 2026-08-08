@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { toast } from "sonner";
 import { CheckCircle2, Paperclip, Smile, X } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -22,7 +24,37 @@ const subtaskLabels = [
 
 export function TaskDrawer({ task, onClose }: { task: Task | null; onClose: () => void }) {
   if (!task) return null;
+  return <TaskDrawerBody task={task} onClose={onClose} />;
+}
+
+function TaskDrawerBody({ task, onClose }: { task: Task; onClose: () => void }) {
   const assignee = memberOf(task.assignee);
+  const [extraSubtasks, setExtraSubtasks] = useState<string[]>([]);
+  const [thread, setThread] = useState(comments.map((c) => ({ ...c, reactions: [...c.reactions] })));
+  const [draft, setDraft] = useState("");
+  const [liked, setLiked] = useState<string[]>([]);
+
+  const addSubtask = () => {
+    const label = window.prompt("New subtask");
+    if (label && label.trim()) {
+      setExtraSubtasks((p) => [...p, label.trim()]);
+      toast.success("Subtask added");
+    }
+  };
+
+  const postComment = () => {
+    const body = draft.trim();
+    if (!body) {
+      toast.error("Write something first.");
+      return;
+    }
+    setThread((prev) => [
+      ...prev,
+      { id: `c${Date.now()}`, user: "u1", time: "just now", body, reactions: [] as typeof prev[number]["reactions"] },
+    ]);
+    setDraft("");
+    toast.success("Comment posted");
+  };
 
   return (
     <Sheet open={!!task} onOpenChange={(o) => !o && onClose()}>
@@ -99,10 +131,12 @@ export function TaskDrawer({ task, onClose }: { task: Task | null; onClose: () =
                   {task.subtasks[0]}/{task.subtasks[1]}
                 </span>
               </h3>
-              <span className="text-xs font-semibold text-primary">Add item</span>
+              <button onClick={addSubtask} className="text-xs font-semibold text-primary hover:underline">
+                Add item
+              </button>
             </div>
             <ul className="mt-3 space-y-2">
-              {subtaskLabels.slice(0, task.subtasks[1]).map((s, i) => (
+              {[...subtaskLabels.slice(0, task.subtasks[1]), ...extraSubtasks].map((s, i) => (
                 <li key={s} className="flex items-center gap-3 rounded-2xl bg-muted/50 px-3 py-2.5">
                   <Checkbox defaultChecked={i < task.subtasks[0]} />
                   <span className="text-sm">{s}</span>
@@ -126,7 +160,7 @@ export function TaskDrawer({ task, onClose }: { task: Task | null; onClose: () =
           <section>
             <h3 className="text-sm font-bold">Comments</h3>
             <ul className="mt-4 space-y-5">
-              {comments.map((c) => {
+              {thread.map((c) => {
                 const m = memberOf(c.user);
                 return (
                   <li key={c.id} className="flex gap-3">
@@ -143,15 +177,29 @@ export function TaskDrawer({ task, onClose }: { task: Task | null; onClose: () =
                       </p>
                       <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{c.body}</p>
                       <div className="mt-2 flex items-center gap-2">
-                        {c.reactions.map(([emoji, count]) => (
-                          <button
-                            key={emoji}
-                            className="rounded-full border border-border px-2 py-0.5 text-xs transition-transform hover:scale-110"
-                          >
-                            {emoji} {count}
-                          </button>
-                        ))}
-                        <button className="grid size-6 place-items-center rounded-full border border-border text-muted-foreground hover:text-primary">
+                        {c.reactions.map(([emoji, count]) => {
+                          const key = `${c.id}${emoji}`;
+                          const on = liked.includes(key);
+                          return (
+                            <button
+                              key={emoji}
+                              onClick={() =>
+                                setLiked((p) => (on ? p.filter((x) => x !== key) : [...p, key]))
+                              }
+                              className={
+                                on
+                                  ? "rounded-full border border-primary bg-primary-soft px-2 py-0.5 text-xs text-primary transition-transform hover:scale-110"
+                                  : "rounded-full border border-border px-2 py-0.5 text-xs transition-transform hover:scale-110"
+                              }
+                            >
+                              {emoji} {Number(count) + (on ? 1 : 0)}
+                            </button>
+                          );
+                        })}
+                        <button
+                          onClick={() => toast("Reactions", { description: "Pick 👍 🎉 🚀 from the picker" })}
+                          className="grid size-6 place-items-center rounded-full border border-border text-muted-foreground hover:text-primary"
+                        >
                           <Smile className="size-3.5" />
                         </button>
                       </div>
@@ -161,8 +209,14 @@ export function TaskDrawer({ task, onClose }: { task: Task | null; onClose: () =
               })}
             </ul>
             <div className="mt-5 flex items-center gap-2">
-              <Input placeholder="Write a comment, @mention a teammate…" className="h-11 rounded-2xl" />
-              <Button variant="hero" className="h-11">
+              <Input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && postComment()}
+                placeholder="Write a comment, @mention a teammate…"
+                className="h-11 rounded-2xl"
+              />
+              <Button variant="hero" className="h-11" onClick={postComment}>
                 Send
               </Button>
             </div>

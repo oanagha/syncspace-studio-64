@@ -1,7 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Mail, MoreHorizontal, Shield, UserPlus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Mail, MoreHorizontal, Shield, UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -10,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AnimatedBar } from "@/components/ux/motion";
-import { members } from "@/lib/data";
+import { members as seedMembers } from "@/lib/data";
 
 export const Route = createFileRoute("/app/team")({
   head: () => ({
@@ -33,15 +43,54 @@ const permissions = [
   ["Manage SSO & audit logs", true, false, false],
 ] as const;
 
+const palette = ["#1A4A6E", "#2D8A9E", "#5CBDB9", "#2F9E7D", "#D9A441", "#E07A5F"];
+
 function TeamPage() {
+  const [members, setMembers] = useState(seedMembers);
+  const [emails, setEmails] = useState("");
+  const [role, setRole] = useState("Member");
+  const [pending, setPending] = useState<{ email: string; role: string }[]>([
+    { email: "jade@northwind.co", role: "Member" },
+    { email: "tom@helios.inc", role: "Guest" },
+  ]);
+
+  const sendInvites = () => {
+    const list = emails
+      .split(",")
+      .map((e) => e.trim())
+      .filter((e) => e.includes("@"));
+    if (list.length === 0) {
+      toast.error("Add at least one valid email address.");
+      return;
+    }
+    setPending((prev) => [...prev, ...list.map((email) => ({ email, role }))]);
+    setEmails("");
+    toast.success(`${list.length} invite${list.length > 1 ? "s" : ""} sent as ${role}`);
+  };
+
+  const changeRole = (id: string, next: string) => {
+    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, role: next } : m)));
+    toast.success(`Role updated to ${next}`);
+  };
+
+  const removeMember = (id: string, name: string) => {
+    setMembers((prev) => prev.filter((m) => m.id !== id));
+    toast.success(`${name} removed from the workspace`);
+  };
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-extrabold sm:text-3xl">Team</h1>
-          <p className="text-sm text-muted-foreground">{members.length} members · 2 pending invites</p>
+          <p className="text-sm text-muted-foreground">
+            {members.length} members · {pending.length} pending invites
+          </p>
         </div>
-        <Button variant="hero">
+        <Button
+          variant="hero"
+          onClick={() => document.getElementById("invite-emails")?.focus()}
+        >
           <UserPlus /> Invite members
         </Button>
       </header>
@@ -54,9 +103,16 @@ function TeamPage() {
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <div className="relative min-w-0 flex-1">
             <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="name@company.com, comma separated" className="h-11 rounded-2xl pl-9" />
+            <Input
+              id="invite-emails"
+              value={emails}
+              onChange={(e) => setEmails(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendInvites()}
+              placeholder="name@company.com, comma separated"
+              className="h-11 rounded-2xl pl-9"
+            />
           </div>
-          <Select defaultValue="Member">
+          <Select value={role} onValueChange={setRole}>
             <SelectTrigger className="h-11 w-full rounded-2xl sm:w-40">
               <SelectValue />
             </SelectTrigger>
@@ -66,10 +122,43 @@ function TeamPage() {
               <SelectItem value="Guest">Guest</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="hero" className="h-11">
+          <Button variant="hero" className="h-11" onClick={sendInvites}>
             Send invites
           </Button>
         </div>
+
+        {pending.length > 0 && (
+          <div className="mt-5 space-y-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Pending invites
+            </p>
+            {pending.map((p) => (
+              <div
+                key={p.email}
+                className="flex items-center gap-3 rounded-2xl border border-border px-4 py-2.5"
+              >
+                <span className="grid size-8 place-items-center rounded-xl bg-primary-soft text-xs font-bold text-primary">
+                  {p.email[0]?.toUpperCase()}
+                </span>
+                <p className="min-w-0 flex-1 truncate text-sm">{p.email}</p>
+                <span className="hidden rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground sm:inline">
+                  {p.role}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Revoke invite for ${p.email}`}
+                  onClick={() => {
+                    setPending((prev) => prev.filter((x) => x.email !== p.email));
+                    toast.success("Invite revoked");
+                  }}
+                >
+                  <X />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="surface-card overflow-hidden">
@@ -84,7 +173,7 @@ function TeamPage() {
               <div className="flex min-w-0 items-center gap-3">
                 <span
                   className="grid size-10 shrink-0 place-items-center rounded-2xl text-xs font-bold text-primary-foreground"
-                  style={{ background: m.color }}
+                  style={{ background: m.color || palette[i % palette.length] }}
                 >
                   {m.initials}
                 </span>
@@ -104,9 +193,37 @@ function TeamPage() {
                   <AnimatedBar value={m.activity} color={m.color} />
                 </div>
               </div>
-              <Button variant="ghost" size="icon-sm" aria-label="Member options">
-                <MoreHorizontal />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon-sm" aria-label={`Options for ${m.name}`}>
+                    <MoreHorizontal />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52 rounded-2xl">
+                  <DropdownMenuLabel>{m.name}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="rounded-xl"
+                    onClick={() => toast(m.name, { description: `${m.email} · ${m.tasks} open tasks` })}
+                  >
+                    View profile
+                  </DropdownMenuItem>
+                  {["Owner", "Admin", "Member"]
+                    .filter((r) => r !== m.role)
+                    .map((r) => (
+                      <DropdownMenuItem key={r} className="rounded-xl" onClick={() => changeRole(m.id, r)}>
+                        Make {r}
+                      </DropdownMenuItem>
+                    ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="rounded-xl text-destructive focus:text-destructive"
+                    onClick={() => removeMember(m.id, m.name)}
+                  >
+                    Remove from workspace
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ))}
         </div>

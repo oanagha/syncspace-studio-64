@@ -1,7 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { CloudUpload, Grid2x2, List, MoreHorizontal, Download } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { files, memberOf } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +27,7 @@ export const Route = createFileRoute("/app/files")({
 function FilesPage() {
   const [view, setView] = useState<"grid" | "list">("grid");
   const [dragOver, setDragOver] = useState(false);
+  const [hidden, setHidden] = useState<string[]>([]);
   const [uploads, setUploads] = useState<{ name: string; progress: number }[]>([
     { name: "sprint-14-recording.mp4", progress: 68 },
   ]);
@@ -109,10 +118,11 @@ function FilesPage() {
 
       {view === "grid" ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {files.map((f, i) => (
+          {files.filter((f) => !hidden.includes(f.id)).map((f, i) => (
             <article
               key={f.id}
-              className="surface-card hover-lift overflow-hidden"
+              onClick={() => toast(f.name, { description: `${f.kind} · ${f.size} · updated ${f.updated}` })}
+              className="surface-card hover-lift cursor-pointer overflow-hidden"
               style={{ animation: `fade-up .5s cubic-bezier(.22,1,.36,1) ${i * 60}ms both` }}
             >
               <div
@@ -134,7 +144,7 @@ function FilesPage() {
         </div>
       ) : (
         <div className="surface-card divide-y divide-border overflow-hidden">
-          {files.map((f) => (
+          {files.filter((f) => !hidden.includes(f.id)).map((f) => (
             <div key={f.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/40">
               <span
                 className="grid size-10 shrink-0 place-items-center rounded-xl text-[10px] font-bold"
@@ -148,12 +158,39 @@ function FilesPage() {
                   {f.size} · {memberOf(f.owner).name} · {f.updated}
                 </p>
               </div>
-              <Button variant="ghost" size="icon-sm" aria-label="Download">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Download"
+                onClick={() => toast.success(`Downloading ${f.name}`)}
+              >
                 <Download />
               </Button>
-              <Button variant="ghost" size="icon-sm" aria-label="More">
-                <MoreHorizontal />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon-sm" aria-label="More">
+                    <MoreHorizontal />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 rounded-2xl">
+                  <DropdownMenuItem className="rounded-xl" onClick={() => toast.success("Share link copied")}>
+                    Copy share link
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="rounded-xl" onClick={() => toast.success("Renaming coming from your team space")}>
+                    Rename
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="rounded-xl text-destructive focus:text-destructive"
+                    onClick={() => {
+                      setHidden((h) => [...h, f.id]);
+                      toast.success(`${f.name} moved to trash`);
+                    }}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ))}
         </div>
