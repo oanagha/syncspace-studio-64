@@ -31,7 +31,7 @@ export function SiteNav() {
           scrolled ? "glass shadow-soft" : "border border-transparent",
         )}
       >
-        <Link to="/" className="shrink-0">
+        <Link to="/" preload="render" className="shrink-0">
           <Logo />
         </Link>
 
@@ -40,6 +40,7 @@ export function SiteNav() {
             <Link
               key={l.to}
               to={l.to}
+              preload="render"
               className="rounded-xl px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-primary-soft hover:text-primary"
               activeProps={{ className: "text-primary bg-primary-soft" }}
             >
@@ -50,10 +51,10 @@ export function SiteNav() {
 
         <div className="ml-auto flex items-center gap-2 md:ml-2">
           <Button asChild variant="ghost" className="hidden sm:inline-flex">
-            <Link to="/signin">Sign in</Link>
+            <Link to="/signin" preload="render">Sign in</Link>
           </Button>
           <Button asChild variant="hero">
-            <Link to="/app">Get Started</Link>
+            <Link to="/app" preload="render">Get Started</Link>
           </Button>
           <Button
             variant="glass"
@@ -73,6 +74,7 @@ export function SiteNav() {
             <Link
               key={l.to}
               to={l.to}
+              preload="render"
               onClick={() => setOpen(false)}
               className="block rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-primary-soft hover:text-primary"
             >
@@ -81,6 +83,7 @@ export function SiteNav() {
           ))}
           <Link
             to="/signin"
+            preload="render"
             onClick={() => setOpen(false)}
             className="block rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-primary-soft hover:text-primary"
           >
