@@ -19,6 +19,7 @@ import { Route as AppAnalyticsRouteImport } from './routes/app.analytics'
 import { Route as AppBoardRouteImport } from './routes/app.board'
 import { Route as AppFilesRouteImport } from './routes/app.files'
 import { Route as AppProjectsRouteImport } from './routes/app.projects'
+import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppTeamRouteImport } from './routes/app.team'
 
 const IndexRoute = IndexRouteImport.update({
@@ -71,6 +72,11 @@ const AppProjectsRoute = AppProjectsRouteImport.update({
   path: '/projects',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppTeamRoute = AppTeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/app/board': typeof AppBoardRoute
   '/app/files': typeof AppFilesRoute
   '/app/projects': typeof AppProjectsRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/team': typeof AppTeamRoute
   '/app/': typeof AppIndexRoute
 }
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/app/board': typeof AppBoardRoute
   '/app/files': typeof AppFilesRoute
   '/app/projects': typeof AppProjectsRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/team': typeof AppTeamRoute
   '/app': typeof AppIndexRoute
 }
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/app/board': typeof AppBoardRoute
   '/app/files': typeof AppFilesRoute
   '/app/projects': typeof AppProjectsRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/team': typeof AppTeamRoute
   '/app/': typeof AppIndexRoute
 }
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/app/board'
     | '/app/files'
     | '/app/projects'
+    | '/app/settings'
     | '/app/team'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/app/board'
     | '/app/files'
     | '/app/projects'
+    | '/app/settings'
     | '/app/team'
     | '/app'
   id:
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/app/board'
     | '/app/files'
     | '/app/projects'
+    | '/app/settings'
     | '/app/team'
     | '/app/'
   fileRoutesById: FileRoutesById
@@ -237,6 +249,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/team': {
       id: '/app/team'
       path: '/team'
@@ -252,6 +271,7 @@ interface AppRouteChildren {
   AppBoardRoute: typeof AppBoardRoute
   AppFilesRoute: typeof AppFilesRoute
   AppProjectsRoute: typeof AppProjectsRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppTeamRoute: typeof AppTeamRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -261,6 +281,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppBoardRoute: AppBoardRoute,
   AppFilesRoute: AppFilesRoute,
   AppProjectsRoute: AppProjectsRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppTeamRoute: AppTeamRoute,
   AppIndexRoute: AppIndexRoute,
 }

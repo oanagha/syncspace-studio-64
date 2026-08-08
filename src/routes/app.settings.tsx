@@ -236,7 +236,7 @@ function Toggle({ label, desc, defaultOn }: { label: string; desc: string; defau
         <p className="text-sm font-bold">{label}</p>
         <p className="text-xs text-muted-foreground">{desc}</p>
       </div>
-      <Switch defaultChecked={defaultOn} />
+      <Switch defaultChecked={defaultOn ?? false} />
     </div>
   );
 }
