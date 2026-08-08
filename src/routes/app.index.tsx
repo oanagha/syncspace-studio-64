@@ -162,7 +162,7 @@ function Dashboard() {
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             <div className="space-y-4" style={{ animation: "fade-up .6s cubic-bezier(.22,1,.36,1) 360ms both" }}>
               <div className="flex items-center justify-between">
-                <h2 className="text-base uppercase tracking-tight text-primary sm:text-lg">Active projects</h2>
+                <h2 className="heading-dot text-base uppercase tracking-tight text-primary sm:text-lg">Active projects</h2>
                 <Link to="/app/projects" className="text-[10px] font-bold uppercase tracking-widest text-secondary hover:underline">
                   View all
                 </Link>
@@ -192,7 +192,7 @@ function Dashboard() {
             </div>
 
             <div className="space-y-4" style={{ animation: "fade-up .6s cubic-bezier(.22,1,.36,1) 420ms both" }}>
-              <h2 className="text-base uppercase tracking-tight text-primary sm:text-lg">Team activity</h2>
+              <h2 className="heading-dot text-base uppercase tracking-tight text-primary sm:text-lg">Team activity</h2>
               <div className="space-y-4">
                 {activity.slice(0, 5).map((a) => {
                   const m = memberOf(a.user);
@@ -226,7 +226,7 @@ function Dashboard() {
             className="surface-card rounded-3xl p-6 sm:p-8"
             style={{ animation: "fade-up .6s cubic-bezier(.22,1,.36,1) 160ms both" }}
           >
-            <Eyebrow>Task distribution</Eyebrow>
+            <h2 className="heading-dot text-xs font-bold uppercase tracking-[0.2em] text-primary">Task distribution</h2>
             <div className="relative mx-auto mt-6 h-44 w-44">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -262,7 +262,7 @@ function Dashboard() {
             className="rounded-3xl bg-primary p-6 text-primary-foreground sm:p-8"
             style={{ animation: "fade-up .6s cubic-bezier(.22,1,.36,1) 220ms both" }}
           >
-            <h2 className="mb-6 text-xs font-bold uppercase tracking-[0.2em] text-accent">Due today</h2>
+            <h2 className="heading-dot text-xs font-bold uppercase tracking-[0.2em] text-accent">Due today</h2>
             <div className="space-y-6">
               {dueToday.map((t, i) => (
                 <div
@@ -281,7 +281,7 @@ function Dashboard() {
               ))}
             </div>
             <div className="mt-8 space-y-4 border-t border-primary-foreground/15 pt-6">
-              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Deadlines</h3>
+              <h3 className="heading-dot text-xs font-bold uppercase tracking-[0.2em] text-accent">Deadlines</h3>
               {projects.slice(0, 3).map((p) => (
                 <div key={p.id} className="flex items-center justify-between gap-3 text-sm">
                   <span className="truncate font-semibold">{p.name}</span>
