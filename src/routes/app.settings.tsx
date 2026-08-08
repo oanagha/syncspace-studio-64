@@ -129,19 +129,8 @@ function SettingsPage() {
 
         <TabsContent value="appearance">
           <Card title="Appearance" desc="Tune density and accent to match how you work.">
-            <div className="space-y-2">
-              <Label>Accent color</Label>
-              <div className="flex flex-wrap gap-3">
-                {["#1A4A6E", "#2D8A9E", "#5CBDB9", "#2F9E7D", "#D9A441"].map((c, i) => (
-                  <button
-                    key={c}
-                    className="size-10 rounded-2xl ring-offset-2 transition-transform hover:scale-110"
-                    style={{ background: c, boxShadow: i === 0 ? "0 0 0 2px var(--card), 0 0 0 4px " + c : undefined }}
-                    aria-label={`Accent ${c}`}
-                  />
-                ))}
-              </div>
-            </div>
+            <AccentPicker />
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Density</Label>
