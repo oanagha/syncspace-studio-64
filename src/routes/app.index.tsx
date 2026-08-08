@@ -25,11 +25,6 @@ export const Route = createFileRoute("/app/")({
   component: Dashboard,
 });
 
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{children}</h2>
-  );
-}
 
 function Dashboard() {
   const [loading, setLoading] = useState(true);
