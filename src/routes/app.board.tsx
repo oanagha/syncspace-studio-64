@@ -1,8 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { CalendarDays, MessageSquare, Paperclip, ListChecks, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { columns, memberOf, tasks as seedTasks, type Task } from "@/lib/data";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { columns, memberOf, members, tasks as seedTasks, type Priority, type Task } from "@/lib/data";
 import { TaskDrawer } from "@/components/app/TaskDrawer";
 import { cn } from "@/lib/utils";
 
@@ -30,8 +48,46 @@ function BoardPage() {
   const [overCol, setOverCol] = useState<string | null>(null);
   const [active, setActive] = useState<Task | null>(null);
 
+  const [addOpen, setAddOpen] = useState(false);
+  const [form, setForm] = useState({
+    title: "",
+    column: columns[0]!,
+    priority: "Medium" as Priority,
+    assignee: members[0]!.id,
+    tag: "Design",
+    due: "Sep 15",
+  });
+
   const move = (id: string, column: string) =>
     setItems((prev) => prev.map((t) => (t.id === id ? { ...t, column } : t)));
+
+  const openAdd = (column: string) => {
+    setForm((f) => ({ ...f, column, title: "" }));
+    setAddOpen(true);
+  };
+
+  const createTask = () => {
+    const title = form.title.trim();
+    if (!title) {
+      toast.error("Add a task title first.");
+      return;
+    }
+    const task: Task = {
+      id: `t${Date.now()}`,
+      title,
+      column: form.column,
+      priority: form.priority,
+      due: form.due,
+      assignee: form.assignee,
+      subtasks: [0, 3],
+      attachments: 0,
+      comments: 0,
+      tag: form.tag,
+    };
+    setItems((prev) => [task, ...prev]);
+    setAddOpen(false);
+    toast.success(`“${title}” added to ${form.column}`);
+  };
 
   return (
     <div className="mx-auto max-w-[1600px] space-y-6">
@@ -45,17 +101,19 @@ function BoardPage() {
             {["u1", "u2", "u3", "u5"].map((id) => {
               const m = memberOf(id);
               return (
-                <span
+                <button
                   key={id}
-                  className="grid size-9 place-items-center rounded-full border-2 border-card text-[10px] font-bold text-primary-foreground"
+                  onClick={() => toast(m.name, { description: `${m.role} · ${m.tasks} tasks assigned` })}
+                  title={m.name}
+                  className="grid size-9 place-items-center rounded-full border-2 border-card text-[10px] font-bold text-primary-foreground transition-transform hover:-translate-y-0.5"
                   style={{ background: m.color }}
                 >
                   {m.initials}
-                </span>
+                </button>
               );
             })}
           </div>
-          <Button variant="hero">
+          <Button variant="hero" onClick={() => openAdd(columns[0]!)}>
             <Plus /> Add task
           </Button>
         </div>
@@ -150,7 +208,10 @@ function BoardPage() {
                   );
                 })}
 
-                <button className="w-full rounded-2xl border border-dashed border-border py-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary">
+                <button
+                  onClick={() => openAdd(col)}
+                  className="w-full rounded-2xl border border-dashed border-border py-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                >
                   + Add card
                 </button>
               </div>
@@ -160,6 +221,98 @@ function BoardPage() {
       </div>
 
       <TaskDrawer task={active} onClose={() => setActive(null)} />
+
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="rounded-3xl sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add a task</DialogTitle>
+            <DialogDescription>New cards land at the top of the selected column.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tt">Task title</Label>
+              <Input
+                id="tt"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && createTask()}
+                placeholder="Realtime presence cursors"
+                className="h-11 rounded-2xl"
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Column</Label>
+                <Select value={form.column} onValueChange={(v) => setForm({ ...form, column: v })}>
+                  <SelectTrigger className="h-11 rounded-2xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {columns.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Priority</Label>
+                <Select
+                  value={form.priority}
+                  onValueChange={(v) => setForm({ ...form, priority: v as Priority })}
+                >
+                  <SelectTrigger className="h-11 rounded-2xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["Low", "Medium", "High", "Urgent"].map((p) => (
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Assignee</Label>
+                <Select value={form.assignee} onValueChange={(v) => setForm({ ...form, assignee: v })}>
+                  <SelectTrigger className="h-11 rounded-2xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {members.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Label</Label>
+                <Select value={form.tag} onValueChange={(v) => setForm({ ...form, tag: v })}>
+                  <SelectTrigger className="h-11 rounded-2xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["Design", "Engineering", "Growth", "Marketing"].map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="hero" className="w-full sm:w-auto" onClick={createTask}>
+              Create task
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

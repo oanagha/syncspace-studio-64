@@ -1,5 +1,6 @@
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   Bell,
   ChevronsUpDown,
@@ -15,9 +16,22 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Check,
+  UserPlus,
+  CloudUpload,
+  Keyboard,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +49,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { members, notifications, projects, workspaces } from "@/lib/data";
+import { members, notifications as seedNotifications, projects, workspaces as seedWorkspaces } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -48,11 +62,26 @@ const nav = [
   { to: "/app/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
 
+const shortcuts = [
+  ["⌘ K", "Open command palette"],
+  ["⌘ B", "Toggle sidebar"],
+  ["N", "New task on the board"],
+  ["G then P", "Go to projects"],
+  ["G then A", "Go to analytics"],
+  ["?", "Show this dialog"],
+];
+
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
-  const [ws, setWs] = useState(workspaces[0]!);
+  const [workspaces, setWorkspaces] = useState(seedWorkspaces);
+  const [ws, setWs] = useState(seedWorkspaces[0]!);
+  const [notes, setNotes] = useState(seedNotifications);
+  const [newWsOpen, setNewWsOpen] = useState(false);
+  const [wsName, setWsName] = useState("");
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -60,12 +89,41 @@ export function AppShell() {
         e.preventDefault();
         setCmdOpen((v) => !v);
       }
+      if (e.key.toLowerCase() === "b" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setCollapsed((v) => !v);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const unread = notifications.filter((n) => n.unread).length;
+  const unread = notes.filter((n) => n.unread).length;
+
+  const createWorkspace = () => {
+    const name = wsName.trim();
+    if (!name) {
+      toast.error("Give your workspace a name first.");
+      return;
+    }
+    const initials = name
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+    const created = { id: `w${Date.now()}`, name, plan: "Starter", initials };
+    setWorkspaces((prev) => [...prev, created]);
+    setWs(created);
+    setWsName("");
+    setNewWsOpen(false);
+    toast.success(`Workspace “${name}” created`);
+  };
+
+  const go = (to: string) => {
+    setCmdOpen(false);
+    navigate({ to });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,7 +146,6 @@ export function AppShell() {
             {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
           </Button>
         </div>
-
 
         <div className="px-3">
           <DropdownMenu>
@@ -126,7 +183,13 @@ export function AppShell() {
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 rounded-xl">
+              <DropdownMenuItem
+                className="gap-2 rounded-xl"
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setNewWsOpen(true);
+                }}
+              >
                 <Plus className="size-4" /> New workspace
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -162,12 +225,11 @@ export function AppShell() {
             <p className="mt-1 text-xs text-muted-foreground">
               Upgrade to Pro to keep unlimited projects and analytics.
             </p>
-            <Button variant="hero" size="sm" className="mt-3 w-full">
-              Upgrade plan
+            <Button variant="hero" size="sm" className="mt-3 w-full" asChild>
+              <Link to="/pricing">Upgrade plan</Link>
             </Button>
           </div>
         )}
-
       </aside>
 
       <div className={cn("transition-[padding] duration-500", collapsed ? "lg:pl-[76px]" : "lg:pl-[264px]")}>
@@ -202,13 +264,24 @@ export function AppShell() {
               <PopoverContent align="end" className="w-[350px] rounded-3xl p-0">
                 <div className="flex items-center justify-between px-4 py-3">
                   <p className="text-sm font-bold">Notifications</p>
-                  <span className="text-xs font-semibold text-primary">Mark all read</span>
+                  <button
+                    onClick={() => {
+                      setNotes((prev) => prev.map((n) => ({ ...n, unread: false })));
+                      toast.success("All notifications marked as read");
+                    }}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    Mark all read
+                  </button>
                 </div>
                 <div className="max-h-[380px] overflow-y-auto border-t border-border">
-                  {notifications.map((n, i) => (
-                    <div
+                  {notes.map((n, i) => (
+                    <button
                       key={n.id}
-                      className="flex gap-3 border-b border-border px-4 py-3 last:border-0 hover:bg-muted/50"
+                      onClick={() =>
+                        setNotes((prev) => prev.map((x) => (x.id === n.id ? { ...x, unread: false } : x)))
+                      }
+                      className="flex w-full gap-3 border-b border-border px-4 py-3 text-left last:border-0 hover:bg-muted/50"
                       style={{ animation: `slide-in-right .35s cubic-bezier(.22,1,.36,1) ${i * 60}ms both` }}
                     >
                       <span
@@ -222,7 +295,7 @@ export function AppShell() {
                         <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>
                         <p className="mt-1 text-[11px] text-muted-foreground">{n.time} ago</p>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </PopoverContent>
@@ -249,7 +322,15 @@ export function AppShell() {
                 <DropdownMenuItem asChild className="rounded-xl">
                   <Link to="/app/settings">Profile & settings</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-xl">Keyboard shortcuts</DropdownMenuItem>
+                <DropdownMenuItem
+                  className="rounded-xl"
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setShortcutsOpen(true);
+                  }}
+                >
+                  Keyboard shortcuts
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="rounded-xl">
                   <Link to="/signin">Sign out</Link>
@@ -283,36 +364,137 @@ export function AppShell() {
         })}
       </nav>
 
-      <Button
-        variant="hero"
-        size="icon"
-        className="fixed bottom-20 right-5 z-40 size-14 rounded-3xl lg:bottom-8 lg:right-8"
-        aria-label="Quick create"
-      >
-        <Plus className="!size-6" />
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="hero"
+            size="icon"
+            className="fixed bottom-20 right-5 z-40 size-14 rounded-3xl lg:bottom-8 lg:right-8"
+            aria-label="Quick create"
+          >
+            <Plus className="!size-6" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" side="top" className="w-56 rounded-2xl">
+          <DropdownMenuLabel>Quick create</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild className="gap-2 rounded-xl">
+            <Link to="/app/projects">
+              <FolderKanban className="size-4" /> New project
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="gap-2 rounded-xl">
+            <Link to="/app/board">
+              <SquareKanban className="size-4" /> New task
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="gap-2 rounded-xl">
+            <Link to="/app/team">
+              <UserPlus className="size-4" /> Invite teammate
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="gap-2 rounded-xl">
+            <Link to="/app/files">
+              <CloudUpload className="size-4" /> Upload file
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="gap-2 rounded-xl"
+            onSelect={(e) => {
+              e.preventDefault();
+              setShortcutsOpen(true);
+            }}
+          >
+            <Keyboard className="size-4" /> Shortcuts
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <CommandDialog open={cmdOpen} onOpenChange={setCmdOpen}>
         <CommandInput placeholder="Search projects, tasks and teammates…" />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
+          <CommandGroup heading="Navigate">
+            {nav.map((item) => (
+              <CommandItem key={item.to} value={`go ${item.label}`} onSelect={() => go(item.to)}>
+                <item.icon className="size-4" /> {item.label}
+              </CommandItem>
+            ))}
+          </CommandGroup>
           <CommandGroup heading="Projects">
             {projects.slice(0, 4).map((p) => (
-              <CommandItem key={p.id}>{p.name}</CommandItem>
+              <CommandItem key={p.id} value={p.name} onSelect={() => go("/app/projects")}>
+                {p.name}
+              </CommandItem>
             ))}
           </CommandGroup>
           <CommandGroup heading="People">
             {members.slice(0, 4).map((m) => (
-              <CommandItem key={m.id}>{m.name}</CommandItem>
+              <CommandItem key={m.id} value={m.name} onSelect={() => go("/app/team")}>
+                {m.name}
+              </CommandItem>
             ))}
           </CommandGroup>
           <CommandGroup heading="Actions">
-            <CommandItem>Create new project</CommandItem>
-            <CommandItem>Invite teammate</CommandItem>
-            <CommandItem>Upload file</CommandItem>
+            <CommandItem onSelect={() => go("/app/projects")}>Create new project</CommandItem>
+            <CommandItem onSelect={() => go("/app/team")}>Invite teammate</CommandItem>
+            <CommandItem onSelect={() => go("/app/files")}>Upload file</CommandItem>
+            <CommandItem
+              onSelect={() => {
+                setCmdOpen(false);
+                setNewWsOpen(true);
+              }}
+            >
+              New workspace
+            </CommandItem>
           </CommandGroup>
         </CommandList>
       </CommandDialog>
+
+      <Dialog open={newWsOpen} onOpenChange={setNewWsOpen}>
+        <DialogContent className="rounded-3xl sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create a workspace</DialogTitle>
+            <DialogDescription>
+              Workspaces keep projects, files and members of one team together.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="ws-name">Workspace name</Label>
+            <Input
+              id="ws-name"
+              value={wsName}
+              onChange={(e) => setWsName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && createWorkspace()}
+              placeholder="Northwind Studio"
+              className="h-11 rounded-2xl"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="hero" className="w-full sm:w-auto" onClick={createWorkspace}>
+              Create workspace
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
+        <DialogContent className="rounded-3xl sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Keyboard shortcuts</DialogTitle>
+            <DialogDescription>Move around SyncSpace without leaving the keyboard.</DialogDescription>
+          </DialogHeader>
+          <div className="divide-y divide-border">
+            {shortcuts.map(([key, label]) => (
+              <div key={key} className="flex items-center justify-between py-2.5 text-sm">
+                <span className="text-muted-foreground">{label}</span>
+                <span className="rounded-lg border border-border px-2 py-0.5 font-mono text-xs">{key}</span>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -21,8 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
 import { ProgressRing } from "@/components/ux/motion";
-import { memberOf, projects } from "@/lib/data";
+import { memberOf, projects as seedProjects } from "@/lib/data";
+
+type Project = (typeof seedProjects)[number];
 
 export const Route = createFileRoute("/app/projects")({
   head: () => ({
@@ -39,6 +43,9 @@ function ProjectsPage() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [sort, setSort] = useState("progress");
+  const [projects, setProjects] = useState<Project[]>(seedProjects);
+
+  const addProject = (p: Project) => setProjects((prev) => [p, ...prev]);
 
   const list = projects
     .filter((p) => (status === "all" ? true : p.status === status))
@@ -53,10 +60,10 @@ function ProjectsPage() {
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-extrabold sm:text-3xl">Projects</h1>
           <p className="text-sm text-muted-foreground">
-            6 active projects across Northwind Studio
+            {projects.length} active projects across Northwind Studio
           </p>
         </div>
-        <CreateProjectModal />
+        <CreateProjectModal onCreate={addProject} />
       </header>
 
       <div className="surface-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
@@ -94,9 +101,10 @@ function ProjectsPage() {
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {list.map((p, i) => (
-          <article
+          <Link
             key={p.id}
-            className="surface-card hover-lift p-6"
+            to="/app/board"
+            className="surface-card hover-lift block p-6"
             style={{ animation: `fade-up .6s cubic-bezier(.22,1,.36,1) ${i * 70}ms both` }}
           >
             <div className="flex items-start justify-between gap-4">
@@ -136,16 +144,45 @@ function ProjectsPage() {
                 {p.done}/{p.tasks} tasks · due {p.due}
               </p>
             </div>
-          </article>
+          </Link>
         ))}
       </div>
     </div>
   );
 }
 
-function CreateProjectModal() {
+function CreateProjectModal({ onCreate }: { onCreate: (p: Project) => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [client, setClient] = useState("");
+  const [due, setDue] = useState("");
+
+  const submit = () => {
+    if (!name.trim()) {
+      toast.error("Give the project a name first.");
+      return;
+    }
+    onCreate({
+      id: `p${Date.now()}`,
+      name: name.trim(),
+      client: client.trim() || "Northwind Studio",
+      progress: 0,
+      tasks: 0,
+      done: 0,
+      due: due || "TBD",
+      status: "Planning",
+      members: ["u1", "u2"],
+      accent: "#2D8A9E",
+    });
+    setName("");
+    setClient("");
+    setDue("");
+    setOpen(false);
+    toast.success("Project created");
+  };
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="hero">
           <Plus /> New project
@@ -161,7 +198,24 @@ function CreateProjectModal() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="pn">Project name</Label>
-            <Input id="pn" placeholder="Aurora Design System" className="h-11 rounded-2xl" />
+            <Input
+              id="pn"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && submit()}
+              placeholder="Aurora Design System"
+              className="h-11 rounded-2xl"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pc">Client</Label>
+            <Input
+              id="pc"
+              value={client}
+              onChange={(e) => setClient(e.target.value)}
+              placeholder="Northwind Studio"
+              className="h-11 rounded-2xl"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="pd">Description</Label>
@@ -183,12 +237,18 @@ function CreateProjectModal() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="dd">Target date</Label>
-              <Input id="dd" type="date" className="h-11 rounded-2xl" />
+              <Input
+                id="dd"
+                type="date"
+                value={due}
+                onChange={(e) => setDue(e.target.value)}
+                className="h-11 rounded-2xl"
+              />
             </div>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="hero" className="w-full sm:w-auto">
+          <Button variant="hero" className="w-full sm:w-auto" onClick={submit}>
             Create project
           </Button>
         </DialogFooter>
