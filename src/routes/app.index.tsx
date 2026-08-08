@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { Counter } from "@/components/ux/motion";
-import { activity, donutData, files, memberOf, projects, tasks, weeklyData } from "@/lib/data";
+import { activity, donutData, memberOf, projects, tasks, weeklyData } from "@/lib/data";
 
 export const Route = createFileRoute("/app/")({
   head: () => ({
@@ -289,34 +289,6 @@ function Dashboard() {
                 </div>
               ))}
             </div>
-          </section>
-
-          <section
-            className="surface-card rounded-3xl p-6 sm:p-8"
-            style={{ animation: "fade-up .6s cubic-bezier(.22,1,.36,1) 280ms both" }}
-          >
-            <div className="mb-6 flex items-center justify-between">
-              <Eyebrow>Files</Eyebrow>
-              <Link to="/app/files" className="text-[10px] font-bold uppercase tracking-widest text-secondary hover:underline">
-                View all
-              </Link>
-            </div>
-            <ul className="space-y-4">
-              {files.slice(0, 4).map((f) => (
-                <li key={f.id} className="flex items-center gap-3">
-                  <span
-                    className="grid size-10 shrink-0 place-items-center rounded-lg text-[10px] font-bold"
-                    style={{ background: `${f.color}1f`, color: f.color }}
-                  >
-                    {f.kind}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold">{f.name}</p>
-                    <p className="text-[10px] font-bold uppercase text-muted-foreground">{f.size}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
           </section>
         </div>
       </div>
