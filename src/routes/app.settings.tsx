@@ -132,7 +132,7 @@ function SettingsPage() {
             <div className="space-y-2">
               <Label>Accent color</Label>
               <div className="flex flex-wrap gap-3">
-                {["#6C63FF", "#8B5CF6", "#06B6D4", "#10B981", "#F59E0B"].map((c, i) => (
+                {["#1A4A6E", "#2D8A9E", "#5CBDB9", "#2F9E7D", "#D9A441"].map((c, i) => (
                   <button
                     key={c}
                     className="size-10 rounded-2xl ring-offset-2 transition-transform hover:scale-110"

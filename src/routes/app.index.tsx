@@ -92,9 +92,9 @@ function Dashboard() {
       <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-3">
-            <StatCard title="Productivity score" value={87} suffix="" ring color="#6C63FF" delta="+6 vs last week" />
-            <StatCard title="Completion rate" value={92} suffix="%" color="#10B981" delta="+3.4% this sprint" />
-            <StatCard title="Avg. cycle time" value={2.4} suffix="d" decimals={1} color="#06B6D4" delta="−0.6d faster" />
+            <StatCard title="Productivity score" value={87} suffix="" ring color="#1A4A6E" delta="+6 vs last week" />
+            <StatCard title="Completion rate" value={92} suffix="%" color="#2F9E7D" delta="+3.4% this sprint" />
+            <StatCard title="Avg. cycle time" value={2.4} suffix="d" decimals={1} color="#5CBDB9" delta="−0.6d faster" />
           </div>
 
           <div className="surface-card p-6">
@@ -112,12 +112,12 @@ function Dashboard() {
                 <AreaChart data={weeklyData}>
                   <defs>
                     <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6C63FF" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#6C63FF" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#1A4A6E" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#1A4A6E" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#06B6D4" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="#06B6D4" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#5CBDB9" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#5CBDB9" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="day" tickLine={false} axisLine={false} fontSize={12} />
@@ -129,8 +129,8 @@ function Dashboard() {
                       boxShadow: "var(--shadow-soft)",
                     }}
                   />
-                  <Area type="monotone" dataKey="completed" stroke="#6C63FF" strokeWidth={3} fill="url(#g1)" />
-                  <Area type="monotone" dataKey="created" stroke="#06B6D4" strokeWidth={3} fill="url(#g2)" />
+                  <Area type="monotone" dataKey="completed" stroke="#1A4A6E" strokeWidth={3} fill="url(#g1)" />
+                  <Area type="monotone" dataKey="created" stroke="#5CBDB9" strokeWidth={3} fill="url(#g2)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -178,7 +178,7 @@ function Dashboard() {
                       cursor={{ fill: "var(--muted)" }}
                       contentStyle={{ borderRadius: 16, border: "1px solid var(--border)" }}
                     />
-                    <Bar dataKey="completed" radius={[10, 10, 10, 10]} fill="#8B5CF6" />
+                    <Bar dataKey="completed" radius={[10, 10, 10, 10]} fill="#2D8A9E" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
