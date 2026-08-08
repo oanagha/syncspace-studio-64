@@ -15,6 +15,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppProjectsRouteImport } from './routes/app.projects'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +47,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProjectsRoute = AppProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
+  '/app/projects': typeof AppProjectsRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
+  '/app/projects': typeof AppProjectsRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -69,13 +77,22 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
+  '/app/projects': typeof AppProjectsRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/forgot-password' | '/signin' | '/signup' | '/app/'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/forgot-password'
+    | '/signin'
+    | '/signup'
+    | '/app/projects'
+    | '/app/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/forgot-password' | '/signin' | '/signup' | '/app'
+  to:
+    '/' | '/forgot-password' | '/signin' | '/signup' | '/app/projects' | '/app'
   id:
     | '__root__'
     | '/'
@@ -83,6 +100,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/signin'
     | '/signup'
+    | '/app/projects'
     | '/app/'
   fileRoutesById: FileRoutesById
 }
@@ -138,14 +156,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/projects': {
+      id: '/app/projects'
+      path: '/projects'
+      fullPath: '/app/projects'
+      preLoaderRoute: typeof AppProjectsRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppProjectsRoute: typeof AppProjectsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppProjectsRoute: AppProjectsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
