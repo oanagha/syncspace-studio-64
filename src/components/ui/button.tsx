@@ -41,13 +41,33 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, onPointerDown, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
+    const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+      const target = e.currentTarget as HTMLElement;
+      if (target?.getBoundingClientRect) {
+        const rect = target.getBoundingClientRect();
+        const ripple = document.createElement("span");
+        const size = Math.max(rect.width, rect.height);
+        ripple.style.cssText = `position:absolute;left:${e.clientX - rect.left - size / 2}px;top:${
+          e.clientY - rect.top - size / 2
+        }px;width:${size}px;height:${size}px;border-radius:9999px;background:currentColor;opacity:.22;pointer-events:none;transform:scale(0);animation:ripple-out .6s ease-out forwards;`;
+        target.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 620);
+      }
+      onPointerDown?.(e);
+    };
     return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        onPointerDown={handlePointerDown}
+        {...props}
+      />
     );
   },
 );
 Button.displayName = "Button";
 
 export { Button, buttonVariants };
+
