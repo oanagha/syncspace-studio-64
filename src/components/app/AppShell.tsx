@@ -337,7 +337,11 @@ export function AppShell() {
           </div>
         </header>
 
-        <main key={pathname} className="animate-fade-up px-4 pb-28 pt-6 sm:px-6 lg:px-8">
+        <main
+          key={pathname}
+          className="px-4 pb-28 pt-6 sm:px-6 lg:px-8"
+          style={{ animation: "fade-up .22s cubic-bezier(.22,1,.36,1) both" }}
+        >
           <Outlet />
         </main>
       </div>
