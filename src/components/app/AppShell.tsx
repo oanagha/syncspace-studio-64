@@ -13,8 +13,6 @@ import {
   Settings,
   SquareKanban,
   Users,
-  PanelLeftClose,
-  PanelLeftOpen,
   Check,
   UserPlus,
   CloudUpload,
