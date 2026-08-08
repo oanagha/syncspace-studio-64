@@ -105,15 +105,15 @@ function AnalyticsPage() {
                 <Line
                   type="monotone"
                   dataKey="completed"
-                  stroke="#6C63FF"
+                  stroke="#1A4A6E"
                   strokeWidth={3}
-                  dot={{ r: 4, strokeWidth: 0, fill: "#6C63FF" }}
+                  dot={{ r: 4, strokeWidth: 0, fill: "#1A4A6E" }}
                   animationDuration={1400}
                 />
                 <Line
                   type="monotone"
                   dataKey="target"
-                  stroke="#06B6D4"
+                  stroke="#5CBDB9"
                   strokeWidth={2}
                   strokeDasharray="6 6"
                   dot={false}

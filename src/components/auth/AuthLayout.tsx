@@ -43,7 +43,7 @@ export function AuthLayout({
                     >
                       <span
                         className="size-2.5 rounded-full"
-                        style={{ background: ["#6C63FF", "#06B6D4", "#10B981"][i] }}
+                        style={{ background: ["#1A4A6E", "#5CBDB9", "#2F9E7D"][i] }}
                       />
                       <span className="text-sm font-medium">{t}</span>
                     </div>
@@ -54,7 +54,7 @@ export function AuthLayout({
 
             <div className="ml-16 w-fit animate-float-slow rounded-3xl glass p-5 shadow-soft">
               <div className="flex -space-x-2">
-                {["#6C63FF", "#8B5CF6", "#06B6D4", "#10B981"].map((c) => (
+                {["#1A4A6E", "#2D8A9E", "#5CBDB9", "#2F9E7D"].map((c) => (
                   <span
                     key={c}
                     className="size-9 rounded-full border-2 border-card"

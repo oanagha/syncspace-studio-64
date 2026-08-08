@@ -1,12 +1,12 @@
 export type Priority = "Low" | "Medium" | "High" | "Urgent";
 
 export const members = [
-  { id: "u1", name: "Ava Mitchell", role: "Owner", initials: "AM", color: "#6C63FF", email: "ava@syncspace.io", tasks: 34, activity: 96 },
-  { id: "u2", name: "Noah Bennett", role: "Admin", initials: "NB", color: "#8B5CF6", email: "noah@syncspace.io", tasks: 27, activity: 88 },
-  { id: "u3", name: "Priya Raman", role: "Member", initials: "PR", color: "#06B6D4", email: "priya@syncspace.io", tasks: 41, activity: 92 },
-  { id: "u4", name: "Diego Alvarez", role: "Member", initials: "DA", color: "#10B981", email: "diego@syncspace.io", tasks: 19, activity: 71 },
-  { id: "u5", name: "Mia Chen", role: "Admin", initials: "MC", color: "#F59E0B", email: "mia@syncspace.io", tasks: 30, activity: 84 },
-  { id: "u6", name: "Liam Okafor", role: "Member", initials: "LO", color: "#EC4899", email: "liam@syncspace.io", tasks: 12, activity: 63 },
+  { id: "u1", name: "Ava Mitchell", role: "Owner", initials: "AM", color: "#1A4A6E", email: "ava@syncspace.io", tasks: 34, activity: 96 },
+  { id: "u2", name: "Noah Bennett", role: "Admin", initials: "NB", color: "#2D8A9E", email: "noah@syncspace.io", tasks: 27, activity: 88 },
+  { id: "u3", name: "Priya Raman", role: "Member", initials: "PR", color: "#5CBDB9", email: "priya@syncspace.io", tasks: 41, activity: 92 },
+  { id: "u4", name: "Diego Alvarez", role: "Member", initials: "DA", color: "#2F9E7D", email: "diego@syncspace.io", tasks: 19, activity: 71 },
+  { id: "u5", name: "Mia Chen", role: "Admin", initials: "MC", color: "#D9A441", email: "mia@syncspace.io", tasks: 30, activity: 84 },
+  { id: "u6", name: "Liam Okafor", role: "Member", initials: "LO", color: "#E07A5F", email: "liam@syncspace.io", tasks: 12, activity: 63 },
 ];
 
 export const workspaces = [
@@ -16,12 +16,12 @@ export const workspaces = [
 ];
 
 export const projects = [
-  { id: "p1", name: "Aurora Design System", client: "Northwind Studio", progress: 78, tasks: 46, done: 36, due: "Sep 12", status: "On track", members: ["u1", "u3", "u5"], accent: "#6C63FF" },
-  { id: "p2", name: "Nimbus Mobile App", client: "Orbit Labs", progress: 42, tasks: 62, done: 26, due: "Oct 03", status: "At risk", members: ["u2", "u4", "u6"], accent: "#8B5CF6" },
-  { id: "p3", name: "Helios Marketing Site", client: "Helios Inc.", progress: 91, tasks: 28, done: 25, due: "Aug 22", status: "On track", members: ["u1", "u2"], accent: "#06B6D4" },
-  { id: "p4", name: "Quantum Analytics", client: "Quantum Bio", progress: 24, tasks: 55, done: 13, due: "Nov 15", status: "Planning", members: ["u3", "u5", "u6"], accent: "#10B981" },
-  { id: "p5", name: "Vertex Onboarding", client: "Vertex Pay", progress: 63, tasks: 31, done: 20, due: "Sep 30", status: "On track", members: ["u4", "u1"], accent: "#F59E0B" },
-  { id: "p6", name: "Lighthouse Rebrand", client: "Lighthouse Co.", progress: 15, tasks: 24, done: 4, due: "Dec 08", status: "Planning", members: ["u6", "u2", "u3"], accent: "#EC4899" },
+  { id: "p1", name: "Aurora Design System", client: "Northwind Studio", progress: 78, tasks: 46, done: 36, due: "Sep 12", status: "On track", members: ["u1", "u3", "u5"], accent: "#1A4A6E" },
+  { id: "p2", name: "Nimbus Mobile App", client: "Orbit Labs", progress: 42, tasks: 62, done: 26, due: "Oct 03", status: "At risk", members: ["u2", "u4", "u6"], accent: "#2D8A9E" },
+  { id: "p3", name: "Helios Marketing Site", client: "Helios Inc.", progress: 91, tasks: 28, done: 25, due: "Aug 22", status: "On track", members: ["u1", "u2"], accent: "#5CBDB9" },
+  { id: "p4", name: "Quantum Analytics", client: "Quantum Bio", progress: 24, tasks: 55, done: 13, due: "Nov 15", status: "Planning", members: ["u3", "u5", "u6"], accent: "#2F9E7D" },
+  { id: "p5", name: "Vertex Onboarding", client: "Vertex Pay", progress: 63, tasks: 31, done: 20, due: "Sep 30", status: "On track", members: ["u4", "u1"], accent: "#D9A441" },
+  { id: "p6", name: "Lighthouse Rebrand", client: "Lighthouse Co.", progress: 15, tasks: 24, done: 4, due: "Dec 08", status: "Planning", members: ["u6", "u2", "u3"], accent: "#E07A5F" },
 ];
 
 export type Task = {
@@ -70,12 +70,12 @@ export const notifications = [
 ];
 
 export const files = [
-  { id: "f1", name: "brand-guidelines-v4.pdf", size: "8.2 MB", kind: "PDF", owner: "u5", updated: "Today, 09:41", color: "#EF4444" },
-  { id: "f2", name: "aurora-tokens.json", size: "126 KB", kind: "JSON", owner: "u3", updated: "Yesterday", color: "#6C63FF" },
-  { id: "f3", name: "nimbus-app-flows.fig", size: "44.8 MB", kind: "FIG", owner: "u1", updated: "2 days ago", color: "#8B5CF6" },
-  { id: "f4", name: "q3-roadmap.xlsx", size: "612 KB", kind: "XLS", owner: "u2", updated: "3 days ago", color: "#10B981" },
-  { id: "f5", name: "onboarding-hero.png", size: "2.4 MB", kind: "PNG", owner: "u6", updated: "5 days ago", color: "#06B6D4" },
-  { id: "f6", name: "investor-update-aug.docx", size: "318 KB", kind: "DOC", owner: "u4", updated: "1 week ago", color: "#F59E0B" },
+  { id: "f1", name: "brand-guidelines-v4.pdf", size: "8.2 MB", kind: "PDF", owner: "u5", updated: "Today, 09:41", color: "#C94F4F" },
+  { id: "f2", name: "aurora-tokens.json", size: "126 KB", kind: "JSON", owner: "u3", updated: "Yesterday", color: "#1A4A6E" },
+  { id: "f3", name: "nimbus-app-flows.fig", size: "44.8 MB", kind: "FIG", owner: "u1", updated: "2 days ago", color: "#2D8A9E" },
+  { id: "f4", name: "q3-roadmap.xlsx", size: "612 KB", kind: "XLS", owner: "u2", updated: "3 days ago", color: "#2F9E7D" },
+  { id: "f5", name: "onboarding-hero.png", size: "2.4 MB", kind: "PNG", owner: "u6", updated: "5 days ago", color: "#5CBDB9" },
+  { id: "f6", name: "investor-update-aug.docx", size: "318 KB", kind: "DOC", owner: "u4", updated: "1 week ago", color: "#D9A441" },
 ];
 
 export const comments = [
@@ -97,10 +97,10 @@ export const weeklyData = [
 export const workloadData = members.slice(0, 5).map((m) => ({ name: m.name.split(" ")[0], value: m.tasks, color: m.color }));
 
 export const donutData = [
-  { name: "Completed", value: 412, color: "#10B981" },
-  { name: "In progress", value: 168, color: "#6C63FF" },
-  { name: "Blocked", value: 46, color: "#F59E0B" },
-  { name: "Backlog", value: 214, color: "#06B6D4" },
+  { name: "Completed", value: 412, color: "#2F9E7D" },
+  { name: "In progress", value: 168, color: "#1A4A6E" },
+  { name: "Blocked", value: 46, color: "#D9A441" },
+  { name: "Backlog", value: 214, color: "#5CBDB9" },
 ];
 
 export const testimonials = [
