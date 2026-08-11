@@ -1,11 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { AuthLayout, SocialButtons } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { apiPost } from "@/lib/api";
+import { saveAuth, type LoginResponse } from "@/lib/auth";
 
 export const Route = createFileRoute("/signin")({
   head: () => ({
@@ -20,7 +22,43 @@ export const Route = createFileRoute("/signin")({
 });
 
 function SignIn() {
+  const navigate = useNavigate();
   const [show, setShow] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (!email.trim()) {
+      toast.error("Email is required.");
+      return;
+    }
+
+    if (!password) {
+      toast.error("Password is required.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const data = await apiPost<LoginResponse>("/api/auth/login", {
+        email: email.trim(),
+        password,
+      });
+
+      saveAuth(data.token, data.user);
+      toast.success(`Welcome back, ${data.user.name}!`);
+      navigate({ to: "/app" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Sign in failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <AuthLayout
       title="Welcome back"
@@ -34,13 +72,7 @@ function SignIn() {
         </>
       }
     >
-      <form
-        className="space-y-5"
-        onSubmit={(e) => {
-          e.preventDefault();
-          window.location.href = "/app";
-        }}
-      >
+      <form className="space-y-5" autoComplete="off" onSubmit={handleSubmit}>
         <SocialButtons />
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="h-px flex-1 bg-border" /> or continue with email{" "}
@@ -48,16 +80,35 @@ function SignIn() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">Work email</Label>
-          <Input id="email" type="email" placeholder="ava@northwind.studio" className="h-11 rounded-2xl" />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="off"
+            placeholder="you@company.com"
+            className="h-11 rounded-2xl"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            readOnly
+            onFocus={(e) => e.currentTarget.removeAttribute("readonly")}
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
           <div className="relative">
             <Input
               id="password"
+              name="password"
               type={show ? "text" : "password"}
-              placeholder="••••••••••"
+              autoComplete="off"
+              placeholder="Enter your password"
               className="h-11 rounded-2xl pr-11"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              readOnly
+              onFocus={(e) => e.currentTarget.removeAttribute("readonly")}
+              required
             />
             <button
               type="button"
@@ -69,16 +120,13 @@ function SignIn() {
             </button>
           </div>
         </div>
-        <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Checkbox defaultChecked /> Keep me signed in
-          </label>
+        <div className="flex justify-end">
           <Link to="/forgot-password" className="text-sm font-semibold text-primary hover:underline">
             Forgot password?
           </Link>
         </div>
-        <Button type="submit" variant="hero" size="lg" className="w-full">
-          Sign in
+        <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? "Signing in..." : "Sign in"}
         </Button>
       </form>
     </AuthLayout>
