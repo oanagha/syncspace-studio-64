@@ -105,7 +105,7 @@ function Landing() {
                   </Link>
                 </Button>
                 <Button asChild variant="glass" size="lg">
-                  <Link to="/app">Explore live demo</Link>
+                  <Link to="/signup">Explore live demo</Link>
                 </Button>
               </div>
               <p className="mt-4 text-xs text-muted-foreground">

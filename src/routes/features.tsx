@@ -114,12 +114,12 @@ function FeaturesPage() {
             <div className="surface-card mt-20 flex flex-col items-center gap-4 p-10 text-center">
               <h2 className="text-2xl font-extrabold">See it running live</h2>
               <p className="max-w-lg text-sm text-muted-foreground">
-                Explore the full workspace demo with real data — no signup required.
+                Create a free workspace to explore boards, files, analytics and more.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button asChild variant="hero" size="lg">
-                  <Link to="/app">
-                    Explore demo <ArrowRight />
+                  <Link to="/signup">
+                    Start free trial <ArrowRight />
                   </Link>
                 </Button>
                 <Button asChild variant="glass" size="lg">

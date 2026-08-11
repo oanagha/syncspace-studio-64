@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Mail, MapPin, MessageSquare, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,12 +30,6 @@ export const Route = createFileRoute("/contact")({
   component: ContactPage,
 });
 
-const channels = [
-  { icon: Mail, title: "Email us", body: "hello@syncspace.app", note: "Replies within one business day." },
-  { icon: MessageSquare, title: "Live chat", body: "In-app, Mon–Fri", note: "9am – 7pm CET with a human." },
-  { icon: MapPin, title: "Studio", body: "Lisbon · Berlin · Remote", note: "Visits by appointment." },
-];
-
 function ContactPage() {
   const [sent, setSent] = useState(false);
 
@@ -55,7 +49,7 @@ function ContactPage() {
             </p>
           </Reveal>
 
-          <div className="mt-12 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+          <div className="mt-12 max-w-2xl">
             <Reveal>
               <form
                 className="surface-card p-7"
@@ -100,21 +94,6 @@ function ContactPage() {
                 </div>
               </form>
             </Reveal>
-
-            <div className="space-y-4">
-              {channels.map((c, i) => (
-                <Reveal key={c.title} delay={i * 80}>
-                  <article className="surface-card hover-lift p-6">
-                    <span className="grid size-11 place-items-center rounded-2xl bg-primary-soft text-primary">
-                      <c.icon className="size-5" />
-                    </span>
-                    <h2 className="mt-4 text-base font-bold">{c.title}</h2>
-                    <p className="mt-1 text-sm font-semibold">{c.body}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{c.note}</p>
-                  </article>
-                </Reveal>
-              ))}
-            </div>
           </div>
         </div>
       </main>

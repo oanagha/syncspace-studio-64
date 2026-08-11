@@ -54,7 +54,7 @@ export function SiteNav() {
             <Link to="/signin" preload="render">Sign in</Link>
           </Button>
           <Button asChild variant="hero">
-            <Link to="/app" preload="render">Get Started</Link>
+            <Link to="/signup" preload="render">Get Started</Link>
           </Button>
           <Button
             variant="glass"
