@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { AnimatedBar } from "@/components/ux/motion";
 import { members as seedMembers } from "@/lib/data";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 export const Route = createFileRoute("/app/team")({
   head: () => ({
@@ -46,8 +47,10 @@ const permissions = [
 const palette = ["#1A4A6E", "#2D8A9E", "#5CBDB9", "#2F9E7D", "#D9A441", "#E07A5F"];
 
 function TeamPage() {
+  const { activeWorkspace } = useWorkspace();
   const [members, setMembers] = useState(seedMembers);
   const [emails, setEmails] = useState("");
+  const workspaceName = activeWorkspace?.name || "this workspace";
   const [role, setRole] = useState("Member");
   const [pending, setPending] = useState<{ email: string; role: string }[]>([
     { email: "jade@northwind.co", role: "Member" },
@@ -98,7 +101,7 @@ function TeamPage() {
       <section className="surface-card p-6">
         <h2 className="text-lg font-bold">Invite teammates</h2>
         <p className="text-sm text-muted-foreground">
-          They'll get access to Northwind Studio and every project you share.
+          They'll get access to {workspaceName} and every project you share.
         </p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <div className="relative min-w-0 flex-1">

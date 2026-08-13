@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   Bell,
-  ChevronsUpDown,
   FolderKanban,
   Files,
   Gauge,
@@ -13,7 +12,6 @@ import {
   Settings,
   SquareKanban,
   Users,
-  Check,
   UserPlus,
   CloudUpload,
   Keyboard,
@@ -21,12 +19,10 @@ import {
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -47,8 +43,13 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { members, notifications as seedNotifications, projects, workspaces as seedWorkspaces } from "@/lib/data";
+import { members, notifications as seedNotifications, projects } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { clearAuth, getUser } from "@/lib/auth";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { WorkspaceSwitcher } from "@/components/workspace/WorkspaceSwitcher";
+import { CreateWorkspaceModal } from "@/components/workspace/CreateWorkspaceModal";
+import { workspaceInitials } from "@/services/workspace.service";
 
 const nav = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -72,14 +73,16 @@ const shortcuts = [
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
-  const [workspaces, setWorkspaces] = useState(seedWorkspaces);
-  const [ws, setWs] = useState(seedWorkspaces[0]!);
   const [notes, setNotes] = useState(seedNotifications);
   const [newWsOpen, setNewWsOpen] = useState(false);
-  const [wsName, setWsName] = useState("");
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
+  const { activeWorkspace } = useWorkspace();
+  const user = getUser();
+  const userName = user?.name || "Account";
+  const userEmail = user?.email || "";
+  const userInitials = workspaceInitials(userName);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -97,26 +100,6 @@ export function AppShell() {
   }, []);
 
   const unread = notes.filter((n) => n.unread).length;
-
-  const createWorkspace = () => {
-    const name = wsName.trim();
-    if (!name) {
-      toast.error("Give your workspace a name first.");
-      return;
-    }
-    const initials = name
-      .split(" ")
-      .map((w) => w[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
-    const created = { id: `w${Date.now()}`, name, plan: "Starter", initials };
-    setWorkspaces((prev) => [...prev, created]);
-    setWs(created);
-    setWsName("");
-    setNewWsOpen(false);
-    toast.success(`Workspace “${name}” created`);
-  };
 
   const go = (to: string) => {
     setCmdOpen(false);
@@ -144,52 +127,7 @@ export function AppShell() {
         </div>
 
         <div className="px-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-2xl border border-sidebar-border p-2.5 text-left transition-colors hover:bg-sidebar-accent",
-                  collapsed && "justify-center",
-                )}
-              >
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl gradient-brand text-xs font-bold text-primary-foreground">
-                  {ws.initials}
-                </span>
-                {!collapsed && (
-                  <>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-bold">{ws.name}</span>
-                      <span className="block text-xs text-muted-foreground">{ws.plan} plan</span>
-                    </span>
-                    <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
-                  </>
-                )}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64 rounded-2xl">
-              <DropdownMenuLabel>Switch workspace</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {workspaces.map((w) => (
-                <DropdownMenuItem key={w.id} onClick={() => setWs(w)} className="gap-3 rounded-xl">
-                  <span className="grid size-7 place-items-center rounded-lg bg-primary-soft text-[10px] font-bold text-primary">
-                    {w.initials}
-                  </span>
-                  <span className="flex-1">{w.name}</span>
-                  {w.id === ws.id && <Check className="size-4 text-primary" />}
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="gap-2 rounded-xl"
-                onSelect={(e) => {
-                  e.preventDefault();
-                  setNewWsOpen(true);
-                }}
-              >
-                <Plus className="size-4" /> New workspace
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <WorkspaceSwitcher collapsed={collapsed} onCreateWorkspace={() => setNewWsOpen(true)} />
         </div>
 
         <nav className="mt-4 flex-1 space-y-1 px-3">
@@ -234,6 +172,9 @@ export function AppShell() {
           <Link to="/" className="lg:hidden">
             <Logo mark />
           </Link>
+          <div className="lg:hidden">
+            <WorkspaceSwitcher collapsed onCreateWorkspace={() => setNewWsOpen(true)} />
+          </div>
 
           <button
             onClick={() => setCmdOpen(true)}
@@ -305,15 +246,15 @@ export function AppShell() {
                     className="grid size-8 place-items-center rounded-xl text-xs font-bold text-primary-foreground"
                     style={{ background: members[0]!.color }}
                   >
-                    {members[0]!.initials}
+                    {userInitials}
                   </span>
-                  <span className="hidden text-sm font-semibold sm:inline">Ava</span>
+                  <span className="hidden text-sm font-semibold sm:inline">{userName.split(" ")[0]}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-2xl">
                 <DropdownMenuLabel>
-                  <p className="text-sm font-bold">Ava Mitchell</p>
-                  <p className="text-xs font-normal text-muted-foreground">ava@syncspace.io</p>
+                  <p className="text-sm font-bold">{userName}</p>
+                  <p className="text-xs font-normal text-muted-foreground">{userEmail}</p>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="rounded-xl">
@@ -329,8 +270,14 @@ export function AppShell() {
                   Keyboard shortcuts
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="rounded-xl">
-                  <Link to="/">Sign out</Link>
+                <DropdownMenuItem
+                  className="rounded-xl"
+                  onSelect={() => {
+                    clearAuth();
+                    navigate({ to: "/" });
+                  }}
+                >
+                  Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -338,7 +285,7 @@ export function AppShell() {
         </header>
 
         <main
-          key={pathname}
+          key={`${activeWorkspace?.id ?? "none"}-${pathname}`}
           className="px-4 pb-28 pt-6 sm:px-6 lg:px-8"
           style={{ animation: "fade-up .22s cubic-bezier(.22,1,.36,1) both" }}
         >
@@ -454,32 +401,7 @@ export function AppShell() {
         </CommandList>
       </CommandDialog>
 
-      <Dialog open={newWsOpen} onOpenChange={setNewWsOpen}>
-        <DialogContent className="rounded-3xl sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create a workspace</DialogTitle>
-            <DialogDescription>
-              Workspaces keep projects, files and members of one team together.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="ws-name">Workspace name</Label>
-            <Input
-              id="ws-name"
-              value={wsName}
-              onChange={(e) => setWsName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && createWorkspace()}
-              placeholder="Northwind Studio"
-              className="h-11 rounded-2xl"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="hero" className="w-full sm:w-auto" onClick={createWorkspace}>
-              Create workspace
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreateWorkspaceModal open={newWsOpen} onOpenChange={setNewWsOpen} />
 
       <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
         <DialogContent className="rounded-3xl sm:max-w-md">

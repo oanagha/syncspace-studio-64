@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { ProgressRing } from "@/components/ux/motion";
 import { memberOf, projects as seedProjects } from "@/lib/data";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 type Project = (typeof seedProjects)[number];
 
@@ -40,10 +41,12 @@ export const Route = createFileRoute("/app/projects")({
 });
 
 function ProjectsPage() {
+  const { activeWorkspace } = useWorkspace();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [sort, setSort] = useState("progress");
   const [projects, setProjects] = useState<Project[]>(seedProjects);
+  const workspaceName = activeWorkspace?.name || "this workspace";
 
   const addProject = (p: Project) => setProjects((prev) => [p, ...prev]);
 
@@ -60,10 +63,10 @@ function ProjectsPage() {
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-extrabold sm:text-3xl">Projects</h1>
           <p className="text-sm text-muted-foreground">
-            {projects.length} active projects across Northwind Studio
+            {projects.length} active projects across {workspaceName}
           </p>
         </div>
-        <CreateProjectModal onCreate={addProject} />
+        <CreateProjectModal onCreate={addProject} workspaceName={workspaceName} />
       </header>
 
       <div className="surface-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
@@ -151,7 +154,13 @@ function ProjectsPage() {
   );
 }
 
-function CreateProjectModal({ onCreate }: { onCreate: (p: Project) => void }) {
+function CreateProjectModal({
+  onCreate,
+  workspaceName,
+}: {
+  onCreate: (p: Project) => void;
+  workspaceName: string;
+}) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [client, setClient] = useState("");
@@ -165,7 +174,7 @@ function CreateProjectModal({ onCreate }: { onCreate: (p: Project) => void }) {
     onCreate({
       id: `p${Date.now()}`,
       name: name.trim(),
-      client: client.trim() || "Northwind Studio",
+      client: client.trim() || workspaceName,
       progress: 0,
       tasks: 0,
       done: 0,
@@ -213,7 +222,7 @@ function CreateProjectModal({ onCreate }: { onCreate: (p: Project) => void }) {
               id="pc"
               value={client}
               onChange={(e) => setClient(e.target.value)}
-              placeholder="Northwind Studio"
+              placeholder={workspaceName}
               className="h-11 rounded-2xl"
             />
           </div>

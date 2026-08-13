@@ -53,6 +53,11 @@ function SignUp() {
       return;
     }
 
+    if (workspaceName.trim().length < 3 || workspaceName.trim().length > 100) {
+      toast.error("Workspace name must be between 3 and 100 characters.");
+      return;
+    }
+
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters.");
       return;
@@ -160,6 +165,7 @@ function SignUp() {
             autoComplete="organization"
             placeholder="Northwind Studio"
             className="h-11 rounded-2xl"
+            maxLength={100}
             value={workspaceName}
             onChange={(e) => setWorkspaceName(e.target.value)}
             required

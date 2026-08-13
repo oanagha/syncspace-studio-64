@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { Check } from "lucide-react";
 import { Bell, Link2, Palette, Shield, SlidersHorizontal, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,10 @@ const tabs = [
 ];
 
 function SettingsPage() {
+  const { activeWorkspace } = useWorkspace();
+  const workspaceName = activeWorkspace?.name || "your workspace";
+  const workspaceSlug = workspaceName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <header>
@@ -163,10 +168,10 @@ function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="workspace">
-          <Card title="Workspace preferences" desc="Applies to everyone in Northwind Studio.">
+          <Card title="Workspace preferences" desc={`Applies to everyone in ${workspaceName}.`}>
             <div className="grid gap-4 sm:grid-cols-2">
-              <FieldInput id="wn" label="Workspace name" value="Northwind Studio" />
-              <FieldInput id="wu" label="Workspace URL" value="syncspace.io/northwind" />
+              <FieldInput id="wn" label="Workspace name" value={workspaceName} />
+              <FieldInput id="wu" label="Workspace URL" value={`syncspace.io/${workspaceSlug || "workspace"}`} />
             </div>
             <Toggle label="Guest client access" desc="Allow comment-only guests on shared projects." defaultOn />
             <Toggle label="Require 2FA for all members" desc="Enforced on next sign-in." />

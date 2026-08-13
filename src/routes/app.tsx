@@ -1,6 +1,15 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { AppShell } from "@/components/app/AppShell";
+import { WorkspaceProvider } from "@/context/WorkspaceContext";
 import { getToken } from "@/lib/auth";
+
+function AppLayout() {
+  return (
+    <WorkspaceProvider>
+      <AppShell />
+    </WorkspaceProvider>
+  );
+}
 
 export const Route = createFileRoute("/app")({
   beforeLoad: () => {
@@ -11,9 +20,13 @@ export const Route = createFileRoute("/app")({
   head: () => ({
     meta: [
       { title: "SyncSpace Workspace" },
-      { name: "description", content: "Your SyncSpace workspace: projects, boards, files, team and analytics in one real-time surface." },
+      {
+        name: "description",
+        content:
+          "Your SyncSpace workspace: projects, boards, files, team and analytics in one real-time surface.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: AppShell,
+  component: AppLayout,
 });

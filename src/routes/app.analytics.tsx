@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Counter, ProgressRing } from "@/components/ux/motion";
 import { donutData, projects, weeklyData, workloadData } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 export const Route = createFileRoute("/app/analytics")({
   head: () => ({
@@ -44,14 +45,16 @@ const trend = [
 ];
 
 function AnalyticsPage() {
+  const { activeWorkspace } = useWorkspace();
   const [range, setRange] = useState("30 days");
+  const workspaceName = activeWorkspace?.name || "Workspace";
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-extrabold sm:text-3xl">Analytics</h1>
-          <p className="text-sm text-muted-foreground">Northwind Studio · updated 4 minutes ago</p>
+          <p className="text-sm text-muted-foreground">{workspaceName} · updated 4 minutes ago</p>
         </div>
         <div className="flex flex-wrap items-center gap-1 rounded-2xl border border-border p-1">
           {ranges.map((r) => (
