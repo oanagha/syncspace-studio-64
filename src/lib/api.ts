@@ -7,6 +7,16 @@ type ApiError = {
   error?: string;
 };
 
+export class ApiRequestError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+  }
+}
+
 function authHeaders(extra?: HeadersInit): Headers {
   const headers = new Headers(extra);
   if (!headers.has("Content-Type")) {
@@ -31,7 +41,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
           ("error" in data && data.error) ||
           "Request failed"
         : "Request failed";
-    throw new Error(String(message));
+    throw new ApiRequestError(String(message), response.status);
   }
 
   return data as T;

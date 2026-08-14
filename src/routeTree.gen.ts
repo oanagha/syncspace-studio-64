@@ -26,6 +26,9 @@ import { Route as AppFilesRouteImport } from './routes/app.files'
 import { Route as AppProjectsRouteImport } from './routes/app.projects'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppTeamRouteImport } from './routes/app.team'
+import { Route as AppProjectsIdRouteImport } from './routes/app.projects_.$id'
+import { Route as AppProjectsIdIndexRouteImport } from './routes/app.projects_.$id.index'
+import { Route as AppProjectsIdBoardRouteImport } from './routes/app.projects_.$id.board'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -112,6 +115,21 @@ const AppTeamRoute = AppTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProjectsIdRoute = AppProjectsIdRouteImport.update({
+  id: '/projects_/$id',
+  path: '/projects/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProjectsIdIndexRoute = AppProjectsIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppProjectsIdRoute,
+} as any)
+const AppProjectsIdBoardRoute = AppProjectsIdBoardRouteImport.update({
+  id: '/board',
+  path: '/board',
+  getParentRoute: () => AppProjectsIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -131,6 +149,9 @@ export interface FileRoutesByFullPath {
   '/app/settings': typeof AppSettingsRoute
   '/app/team': typeof AppTeamRoute
   '/app/': typeof AppIndexRoute
+  '/app/projects/$id': typeof AppProjectsIdRouteWithChildren
+  '/app/projects/$id/board': typeof AppProjectsIdBoardRoute
+  '/app/projects/$id/': typeof AppProjectsIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -149,6 +170,8 @@ export interface FileRoutesByTo {
   '/app/settings': typeof AppSettingsRoute
   '/app/team': typeof AppTeamRoute
   '/app': typeof AppIndexRoute
+  '/app/projects/$id/board': typeof AppProjectsIdBoardRoute
+  '/app/projects/$id': typeof AppProjectsIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -169,6 +192,9 @@ export interface FileRoutesById {
   '/app/settings': typeof AppSettingsRoute
   '/app/team': typeof AppTeamRoute
   '/app/': typeof AppIndexRoute
+  '/app/projects_/$id': typeof AppProjectsIdRouteWithChildren
+  '/app/projects_/$id/board': typeof AppProjectsIdBoardRoute
+  '/app/projects_/$id/': typeof AppProjectsIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -190,6 +216,9 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/team'
     | '/app/'
+    | '/app/projects/$id'
+    | '/app/projects/$id/board'
+    | '/app/projects/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -208,6 +237,8 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/team'
     | '/app'
+    | '/app/projects/$id/board'
+    | '/app/projects/$id'
   id:
     | '__root__'
     | '/'
@@ -227,6 +258,9 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/team'
     | '/app/'
+    | '/app/projects_/$id'
+    | '/app/projects_/$id/board'
+    | '/app/projects_/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -363,8 +397,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTeamRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/projects_/$id': {
+      id: '/app/projects_/$id'
+      path: '/projects/$id'
+      fullPath: '/app/projects/$id'
+      preLoaderRoute: typeof AppProjectsIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/projects_/$id/': {
+      id: '/app/projects_/$id/'
+      path: '/'
+      fullPath: '/app/projects/$id/'
+      preLoaderRoute: typeof AppProjectsIdIndexRouteImport
+      parentRoute: typeof AppProjectsIdRoute
+    }
+    '/app/projects_/$id/board': {
+      id: '/app/projects_/$id/board'
+      path: '/board'
+      fullPath: '/app/projects/$id/board'
+      preLoaderRoute: typeof AppProjectsIdBoardRouteImport
+      parentRoute: typeof AppProjectsIdRoute
+    }
   }
 }
+
+interface AppProjectsIdRouteChildren {
+  AppProjectsIdBoardRoute: typeof AppProjectsIdBoardRoute
+  AppProjectsIdIndexRoute: typeof AppProjectsIdIndexRoute
+}
+
+const AppProjectsIdRouteChildren: AppProjectsIdRouteChildren = {
+  AppProjectsIdBoardRoute: AppProjectsIdBoardRoute,
+  AppProjectsIdIndexRoute: AppProjectsIdIndexRoute,
+}
+
+const AppProjectsIdRouteWithChildren = AppProjectsIdRoute._addFileChildren(
+  AppProjectsIdRouteChildren,
+)
 
 interface AppRouteChildren {
   AppAnalyticsRoute: typeof AppAnalyticsRoute
@@ -374,6 +443,7 @@ interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppTeamRoute: typeof AppTeamRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppProjectsIdRoute: typeof AppProjectsIdRouteWithChildren
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -384,6 +454,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppTeamRoute: AppTeamRoute,
   AppIndexRoute: AppIndexRoute,
+  AppProjectsIdRoute: AppProjectsIdRouteWithChildren,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

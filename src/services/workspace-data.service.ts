@@ -11,8 +11,7 @@ export const workspaceQueryKeys = {
 
 /**
  * Workspace-scoped data loaders.
- * Wire each to its API when available:
- * GET /api/projects?workspace_id=
+ * GET /api/projects?workspaceId=
  * GET /api/tasks?workspace_id=
  * GET /api/files?workspace_id=
  * GET /api/team?workspace_id=

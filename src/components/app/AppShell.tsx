@@ -100,6 +100,7 @@ export function AppShell() {
   }, []);
 
   const unread = notes.filter((n) => n.unread).length;
+  const isProjectDetail = /^\/app\/projects\/[^/]+/.test(pathname);
 
   const go = (to: string) => {
     setCmdOpen(false);
@@ -313,52 +314,54 @@ export function AppShell() {
         })}
       </nav>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="hero"
-            size="icon"
-            className="fixed bottom-20 right-5 z-40 size-14 rounded-3xl lg:bottom-8 lg:right-8"
-            aria-label="Quick create"
-          >
-            <Plus className="!size-6" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" side="top" className="w-56 rounded-2xl">
-          <DropdownMenuLabel>Quick create</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild className="gap-2 rounded-xl">
-            <Link to="/app/projects">
-              <FolderKanban className="size-4" /> New project
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild className="gap-2 rounded-xl">
-            <Link to="/app/board">
-              <SquareKanban className="size-4" /> New task
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild className="gap-2 rounded-xl">
-            <Link to="/app/team">
-              <UserPlus className="size-4" /> Invite teammate
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild className="gap-2 rounded-xl">
-            <Link to="/app/files">
-              <CloudUpload className="size-4" /> Upload file
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="gap-2 rounded-xl"
-            onSelect={(e) => {
-              e.preventDefault();
-              setShortcutsOpen(true);
-            }}
-          >
-            <Keyboard className="size-4" /> Shortcuts
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {!isProjectDetail && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="hero"
+              size="icon"
+              className="fixed bottom-20 right-5 z-40 size-14 rounded-3xl lg:bottom-8 lg:right-8"
+              aria-label="Quick create"
+            >
+              <Plus className="!size-6" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="top" className="w-56 rounded-2xl">
+            <DropdownMenuLabel>Quick create</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild className="gap-2 rounded-xl">
+              <Link to="/app/projects">
+                <FolderKanban className="size-4" /> New project
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="gap-2 rounded-xl">
+              <Link to="/app/board">
+                <SquareKanban className="size-4" /> New task
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="gap-2 rounded-xl">
+              <Link to="/app/team">
+                <UserPlus className="size-4" /> Invite teammate
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="gap-2 rounded-xl">
+              <Link to="/app/files">
+                <CloudUpload className="size-4" /> Upload file
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="gap-2 rounded-xl"
+              onSelect={(e) => {
+                e.preventDefault();
+                setShortcutsOpen(true);
+              }}
+            >
+              <Keyboard className="size-4" /> Shortcuts
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       <CommandDialog open={cmdOpen} onOpenChange={setCmdOpen}>
         <CommandInput placeholder="Search projects, tasks and teammates…" />
