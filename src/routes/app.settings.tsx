@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { usePreferences } from "@/hooks/usePreferences";
 import { Check } from "lucide-react";
 import { Bell, Link2, Palette, Shield, SlidersHorizontal, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ApiRequestError } from "@/lib/api";
+import {
+  LANGUAGE_LABELS,
+  LANGUAGES,
+  type LanguagePreference,
+  type SidebarPreference,
+  type ThemePreference,
+  type UserPreferences,
+} from "@/services/settings.service";
 
 export const Route = createFileRoute("/app/settings")({
   head: () => ({
@@ -41,8 +51,23 @@ const tabs = [
 
 function SettingsPage() {
   const { activeWorkspace } = useWorkspace();
+  const { preferences, saving, updatePreferences } = usePreferences();
+  const [draft, setDraft] = useState<UserPreferences>(preferences);
   const workspaceName = activeWorkspace?.name || "your workspace";
   const workspaceSlug = workspaceName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+  useEffect(() => {
+    setDraft(preferences);
+  }, [preferences]);
+
+  const savePreferences = async (patch: Partial<UserPreferences>) => {
+    try {
+      await updatePreferences(patch);
+      toast.success("Preferences saved");
+    } catch (err) {
+      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to save preferences.");
+    }
+  };
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -126,20 +151,75 @@ function SettingsPage() {
 
         <TabsContent value="notifications">
           <Card title="Notifications" desc="Choose what reaches you and where.">
-            <Toggle label="Mentions" desc="Someone @mentions you in a comment or doc." defaultOn />
-            <Toggle label="Task assignments" desc="A task is assigned to you or reassigned." defaultOn />
-            <Toggle label="Due date reminders" desc="24 hours before a task is due." defaultOn />
-            <Toggle label="File uploads" desc="New files added to projects you follow." />
-            <Toggle label="Weekly digest" desc="Monday summary of team productivity." defaultOn />
-            <SaveRow />
+            <Toggle
+              label="In-app notifications"
+              desc="Show mentions and alerts in the header. This setting is saved to your account."
+              checked={draft.notifications}
+              onCheckedChange={(notifications) => setDraft((current) => ({ ...current, notifications }))}
+            />
+            <Toggle label="Mentions" desc="Someone @mentions you in a comment or doc." defaultOn disabled={!draft.notifications} />
+            <Toggle label="Task assignments" desc="A task is assigned to you or reassigned." defaultOn disabled={!draft.notifications} />
+            <Toggle label="Due date reminders" desc="24 hours before a task is due." defaultOn disabled={!draft.notifications} />
+            <Toggle label="File uploads" desc="New files added to projects you follow." disabled={!draft.notifications} />
+            <Toggle label="Weekly digest" desc="Monday summary of team productivity." defaultOn disabled={!draft.notifications} />
+            <SaveRow
+              saving={saving}
+              onCancel={() => setDraft(preferences)}
+              onSave={() => savePreferences({ notifications: draft.notifications })}
+            />
           </Card>
         </TabsContent>
 
         <TabsContent value="appearance">
-          <Card title="Appearance" desc="Tune density and accent to match how you work.">
-            <AccentPicker />
-
+          <Card title="Appearance" desc="Theme, language, and sidebar stay saved across sessions.">
             <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Theme</Label>
+                <Select
+                  value={draft.theme}
+                  onValueChange={(theme) => setDraft((current) => ({ ...current, theme: theme as ThemePreference }))}
+                >
+                  <SelectTrigger className="h-11 rounded-2xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Light</SelectItem>
+                    <SelectItem value="dark">Dark</SelectItem>
+                    <SelectItem value="system">System</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Language</Label>
+                <Select
+                  value={draft.language}
+                  onValueChange={(language) =>
+                    setDraft((current) => ({ ...current, language: language as LanguagePreference }))
+                  }
+                >
+                  <SelectTrigger className="h-11 rounded-2xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.map((code) => (
+                      <SelectItem key={code} value={code}>
+                        {LANGUAGE_LABELS[code]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Sidebar</Label>
+                <Select
+                  value={draft.sidebar}
+                  onValueChange={(sidebar) =>
+                    setDraft((current) => ({ ...current, sidebar: sidebar as SidebarPreference }))
+                  }
+                >
+                  <SelectTrigger className="h-11 rounded-2xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="expanded">Expanded</SelectItem>
+                    <SelectItem value="collapsed">Collapsed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label>Density</Label>
                 <Select defaultValue="comfortable">
@@ -150,20 +230,21 @@ function SettingsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Default view</Label>
-                <Select defaultValue="board">
-                  <SelectTrigger className="h-11 rounded-2xl"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="board">Kanban board</SelectItem>
-                    <SelectItem value="list">List</SelectItem>
-                    <SelectItem value="calendar">Calendar</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
+
+            <AccentPicker />
             <Toggle label="Reduce motion" desc="Minimise parallax and card animations." />
-            <SaveRow />
+            <SaveRow
+              saving={saving}
+              onCancel={() => setDraft(preferences)}
+              onSave={() =>
+                savePreferences({
+                  theme: draft.theme,
+                  language: draft.language,
+                  sidebar: draft.sidebar,
+                })
+              }
+            />
           </Card>
         </TabsContent>
 
@@ -230,23 +311,70 @@ function FieldInput({ id, label, value, type = "text" }: { id: string; label: st
   );
 }
 
-function Toggle({ label, desc, defaultOn }: { label: string; desc: string; defaultOn?: boolean }) {
+function Toggle({
+  label,
+  desc,
+  defaultOn,
+  checked,
+  onCheckedChange,
+  disabled,
+}: {
+  label: string;
+  desc: string;
+  defaultOn?: boolean;
+  checked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+  disabled?: boolean;
+}) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-2xl bg-muted/50 px-4 py-3.5">
       <div className="min-w-0">
         <p className="text-sm font-bold">{label}</p>
         <p className="text-xs text-muted-foreground">{desc}</p>
       </div>
-      <Switch defaultChecked={defaultOn ?? false} />
+      <Switch
+        checked={checked}
+        defaultChecked={checked === undefined ? defaultOn ?? false : undefined}
+        onCheckedChange={onCheckedChange}
+        disabled={disabled}
+      />
     </div>
   );
 }
 
-function SaveRow() {
+function SaveRow({
+  saving,
+  onCancel,
+  onSave,
+}: {
+  saving?: boolean;
+  onCancel?: () => void;
+  onSave?: () => void;
+}) {
   return (
     <div className="flex justify-end gap-2">
-      <Button variant="ghost" onClick={() => toast("Changes discarded")}>Cancel</Button>
-      <Button variant="hero" onClick={() => toast.success("Settings saved")}>Save changes</Button>
+      <Button
+        variant="ghost"
+        onClick={() => {
+          onCancel?.();
+          toast("Changes discarded");
+        }}
+      >
+        Cancel
+      </Button>
+      <Button
+        variant="hero"
+        disabled={saving}
+        onClick={() => {
+          if (onSave) {
+            onSave();
+            return;
+          }
+          toast.success("Settings saved");
+        }}
+      >
+        {saving ? "Saving…" : "Save changes"}
+      </Button>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, FolderKanban, ListTodo, Pencil, SquareKanban, Users } from "lucide-react";
+import { ArrowLeft, Calendar, FolderKanban, ListTodo, Pencil, SquareKanban, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddTaskModal } from "@/components/projects/AddTaskModal";
@@ -9,6 +9,7 @@ import { EditProjectModal } from "@/components/projects/EditProjectModal";
 import { EditTaskModal } from "@/components/projects/EditTaskModal";
 import { ProgressCircle } from "@/components/projects/ProgressCircle";
 import { ApiRequestError } from "@/lib/api";
+import { useDeleteTask } from "@/hooks/useDeleteTask";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import {
   canEditProject,
@@ -21,7 +22,7 @@ import {
   projectDetailQueryKey,
   type Project,
 } from "@/services/project.service";
-import { listTasks, taskQueryKey, type ProjectTask } from "@/services/task.service";
+import { isTaskOverdue, listTasks, taskQueryKey, type ProjectTask } from "@/services/task.service";
 import { cn } from "@/lib/utils";
 
 type ProjectDetailPageProps = {
@@ -77,6 +78,7 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
   const { activeWorkspace } = useWorkspace();
+  const deleteTask = useDeleteTask(projectId);
 
   const projectQuery = useQuery({
     queryKey: projectDetailQueryKey(projectId),
@@ -278,8 +280,13 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
                   {task.description?.trim() && (
                     <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{task.description}</p>
                   )}
-                  <p className="text-xs text-muted-foreground">
-                    Due {formatProjectDeadline(task.due_date)}
+                  <p
+                    className={cn(
+                      "text-xs",
+                      isTaskOverdue(task) ? "font-semibold text-destructive" : "text-muted-foreground",
+                    )}
+                  >
+                    {isTaskOverdue(task) ? "Overdue" : "Due"} {formatProjectDeadline(task.due_date)}
                   </p>
                 </div>
                 <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold text-muted-foreground">
@@ -288,6 +295,17 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
                 <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-bold text-primary">
                   {task.priority}
                 </span>
+                {task.assignee && (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span
+                      className="grid size-6 place-items-center rounded-full text-[9px] font-bold text-primary-foreground"
+                      style={{ background: memberAvatarColor(task.assignee.id) }}
+                    >
+                      {memberInitials(task.assignee.name)}
+                    </span>
+                    {task.assignee.name}
+                  </span>
+                )}
                 <Button
                   type="button"
                   variant="ghost"
@@ -297,6 +315,20 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
                   onClick={() => setEditingTask(task)}
                 >
                   <Pencil className="size-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Delete ${task.title}`}
+                  className="size-8 text-muted-foreground hover:text-destructive"
+                  disabled={deleteTask.isPending}
+                  onClick={() => {
+                    if (!window.confirm(`Delete “${task.title}”? This cannot be undone.`)) return;
+                    deleteTask.mutate(task.id);
+                  }}
+                >
+                  <Trash2 className="size-3.5" />
                 </Button>
               </li>
             ))}

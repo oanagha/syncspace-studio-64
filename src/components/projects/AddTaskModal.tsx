@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createTask, TASK_COLUMNS, TASK_PRIORITIES } from "@/services/task.service";
-import { projectDetailQueryKey } from "@/services/project.service";
+import { createTask, TASK_PRIORITIES } from "@/services/task.service";
+import { columnQueryKey, columnTitle, listColumns } from "@/services/column.service";
+import { getProject, projectDetailQueryKey } from "@/services/project.service";
 
 type AddTaskModalProps = {
   projectId: number;
@@ -52,6 +53,20 @@ export function AddTaskModal({
   const [column, setColumn] = useState(defaultColumn);
   const [priority, setPriority] = useState("Medium");
   const [dueDate, setDueDate] = useState("");
+  const [assigneeId, setAssigneeId] = useState("none");
+
+  const projectQuery = useQuery({
+    queryKey: projectDetailQueryKey(projectId),
+    queryFn: () => getProject(projectId),
+    enabled: Number.isInteger(projectId) && projectId > 0 && open,
+  });
+  const columnsQuery = useQuery({
+    queryKey: columnQueryKey(projectId),
+    queryFn: () => listColumns(projectId),
+    enabled: Number.isInteger(projectId) && projectId > 0 && open,
+  });
+  const members = projectQuery.data?.project.members ?? [];
+  const columns = columnsQuery.data?.columns ?? [];
 
   useEffect(() => {
     if (open) setColumn(defaultColumn);
@@ -63,16 +78,19 @@ export function AddTaskModal({
     setColumn(defaultColumn);
     setPriority("Medium");
     setDueDate("");
+    setAssigneeId("none");
   };
 
   const mutation = useMutation({
     mutationFn: () =>
-      createTask(projectId, {
+      createTask({
+        projectId,
         title: title.trim(),
         description: description.trim(),
-        column,
+        columnId: column,
+        assigneeId: assigneeId === "none" ? null : Number(assigneeId),
         priority,
-        due_date: dueDate || undefined,
+        dueDate: dueDate || undefined,
       }),
     onSuccess: (data) => {
       toast.success(`Task “${data.task.title}” added`);
@@ -158,9 +176,9 @@ export function AddTaskModal({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {TASK_COLUMNS.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {value}
+                  {columns.map((item) => (
+                    <SelectItem key={item.id} value={columnTitle(item)}>
+                      {columnTitle(item)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -182,15 +200,33 @@ export function AddTaskModal({
               </Select>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="task-due">Due date</Label>
-            <Input
-              id="task-due"
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="h-11 rounded-2xl"
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Assignee</Label>
+              <Select value={assigneeId} onValueChange={setAssigneeId}>
+                <SelectTrigger className="h-11 rounded-2xl">
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {members.map((member) => (
+                    <SelectItem key={member.id} value={String(member.id)}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="task-due">Due date</Label>
+              <Input
+                id="task-due"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="h-11 rounded-2xl"
+              />
+            </div>
           </div>
         </div>
         <DialogFooter>

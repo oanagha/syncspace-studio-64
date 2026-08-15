@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Mail, MoreHorizontal, Shield, UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AnimatedBar } from "@/components/ux/motion";
-import { members as seedMembers } from "@/lib/data";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { memberAvatarColor } from "@/services/project.service";
+import {
+  invitationQueryKey,
+  inviteToWorkspace,
+  listInvitations,
+  listMembers,
+  teamMembersQueryKey,
+} from "@/services/team.service";
+import { ApiRequestError } from "@/lib/api";
 
 export const Route = createFileRoute("/app/team")({
   head: () => ({
@@ -47,15 +56,54 @@ const permissions = [
 const palette = ["#1A4A6E", "#2D8A9E", "#5CBDB9", "#2F9E7D", "#D9A441", "#E07A5F"];
 
 function TeamPage() {
+  const queryClient = useQueryClient();
   const { activeWorkspace } = useWorkspace();
-  const [members, setMembers] = useState(seedMembers);
   const [emails, setEmails] = useState("");
   const workspaceName = activeWorkspace?.name || "this workspace";
   const [role, setRole] = useState("Member");
-  const [pending, setPending] = useState<{ email: string; role: string }[]>([
-    { email: "jade@northwind.co", role: "Member" },
-    { email: "tom@helios.inc", role: "Guest" },
-  ]);
+
+  const invitesQuery = useQuery({
+    queryKey: invitationQueryKey(activeWorkspace?.id),
+    queryFn: () => listInvitations(activeWorkspace!.id),
+    enabled: Boolean(activeWorkspace?.id),
+  });
+  const pending = invitesQuery.data?.invitations ?? [];
+
+  const membersQuery = useQuery({
+    queryKey: teamMembersQueryKey(activeWorkspace?.id),
+    queryFn: () => listMembers(activeWorkspace!.id),
+    enabled: Boolean(activeWorkspace?.id),
+  });
+  const members = membersQuery.data?.members ?? [];
+
+  const inviteMutation = useMutation({
+    mutationFn: async (list: string[]) => {
+      if (!activeWorkspace) throw new Error("Select a workspace first.");
+      const results = [];
+      for (const email of list) {
+        results.push(
+          await inviteToWorkspace({
+            workspaceId: activeWorkspace.id,
+            email,
+            role,
+          }),
+        );
+      }
+      return results;
+    },
+    onSuccess: (results) => {
+      setEmails("");
+      toast.success(
+        `${results.length} invite${results.length > 1 ? "s" : ""} sent as ${role}`,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: invitationQueryKey(activeWorkspace?.id),
+      });
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to send invite.");
+    },
+  });
 
   const sendInvites = () => {
     const list = emails
@@ -66,19 +114,19 @@ function TeamPage() {
       toast.error("Add at least one valid email address.");
       return;
     }
-    setPending((prev) => [...prev, ...list.map((email) => ({ email, role }))]);
-    setEmails("");
-    toast.success(`${list.length} invite${list.length > 1 ? "s" : ""} sent as ${role}`);
+    if (!activeWorkspace) {
+      toast.error("Select a workspace first.");
+      return;
+    }
+    inviteMutation.mutate(list);
   };
 
-  const changeRole = (id: string, next: string) => {
-    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, role: next } : m)));
-    toast.success(`Role updated to ${next}`);
+  const changeRole = (_id: number, next: string) => {
+    toast.message(`Changing roles to ${next} is not available yet.`);
   };
 
-  const removeMember = (id: string, name: string) => {
-    setMembers((prev) => prev.filter((m) => m.id !== id));
-    toast.success(`${name} removed from the workspace`);
+  const removeMember = (_id: number, name: string) => {
+    toast.message(`Removing ${name} is not available yet.`);
   };
 
   return (
@@ -125,8 +173,13 @@ function TeamPage() {
               <SelectItem value="Guest">Guest</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="hero" className="h-11" onClick={sendInvites}>
-            Send invites
+          <Button
+            variant="hero"
+            className="h-11"
+            onClick={sendInvites}
+            disabled={inviteMutation.isPending}
+          >
+            {inviteMutation.isPending ? "Sending..." : "Send invites"}
           </Button>
         </div>
 
@@ -137,7 +190,7 @@ function TeamPage() {
             </p>
             {pending.map((p) => (
               <div
-                key={p.email}
+                key={p.id}
                 className="flex items-center gap-3 rounded-2xl border border-border px-4 py-2.5"
               >
                 <span className="grid size-8 place-items-center rounded-xl bg-primary-soft text-xs font-bold text-primary">
@@ -152,8 +205,7 @@ function TeamPage() {
                   size="icon-sm"
                   aria-label={`Revoke invite for ${p.email}`}
                   onClick={() => {
-                    setPending((prev) => prev.filter((x) => x.email !== p.email));
-                    toast.success("Invite revoked");
+                    toast.message("Revoke invite is not available yet.");
                   }}
                 >
                   <X />
@@ -167,6 +219,11 @@ function TeamPage() {
       <section className="surface-card overflow-hidden">
         <h2 className="px-6 pt-6 text-lg font-bold">Members</h2>
         <div className="mt-4 divide-y divide-border">
+          {membersQuery.isLoading ? (
+            <p className="px-6 py-8 text-sm text-muted-foreground">Loading members…</p>
+          ) : members.length === 0 ? (
+            <p className="px-6 py-8 text-sm text-muted-foreground">No members in this workspace yet.</p>
+          ) : null}
           {members.map((m, i) => (
             <div
               key={m.id}
@@ -176,7 +233,7 @@ function TeamPage() {
               <div className="flex min-w-0 items-center gap-3">
                 <span
                   className="grid size-10 shrink-0 place-items-center rounded-2xl text-xs font-bold text-primary-foreground"
-                  style={{ background: m.color || palette[i % palette.length] }}
+                  style={{ background: memberAvatarColor(m.id) || palette[i % palette.length] }}
                 >
                   {m.initials}
                 </span>
@@ -193,7 +250,7 @@ function TeamPage() {
               <div className="hidden min-w-0 sm:block">
                 <p className="text-xs text-muted-foreground">{m.tasks} tasks · {m.activity}% active</p>
                 <div className="mt-1.5">
-                  <AnimatedBar value={m.activity} color={m.color} />
+                  <AnimatedBar value={m.activity} color={memberAvatarColor(m.id)} />
                 </div>
               </div>
               <DropdownMenu>

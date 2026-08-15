@@ -1,12 +1,15 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { AppShell } from "@/components/app/AppShell";
+import { PreferencesProvider } from "@/context/PreferencesContext";
 import { WorkspaceProvider } from "@/context/WorkspaceContext";
 import { getToken } from "@/lib/auth";
 
 function AppLayout() {
   return (
     <WorkspaceProvider>
-      <AppShell />
+      <PreferencesProvider>
+        <AppShell />
+      </PreferencesProvider>
     </WorkspaceProvider>
   );
 }
