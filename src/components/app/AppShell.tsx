@@ -88,6 +88,8 @@ export function AppShell() {
   const navigate = useNavigate();
   const { activeWorkspace } = useWorkspace();
   const user = getUser();
+  const userName = preferences.fullName || user?.name || "Account";
+  const userEmail = preferences.email || user?.email || "";
   const queryClient = useQueryClient();
   const notificationsEnabled = preferences.notifications;
   const notificationsQuery = useQuery({
@@ -97,8 +99,6 @@ export function AppShell() {
     refetchOnWindowFocus: true,
   });
   const notes = notificationsQuery.data?.notifications ?? [];
-  const userName = user?.name || "Account";
-  const userEmail = user?.email || "";
   const userInitials = workspaceInitials(userName);
 
   useEffect(() => {

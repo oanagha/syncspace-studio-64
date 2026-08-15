@@ -8,14 +8,22 @@ import {
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import {
+  ACCENTS,
   DEFAULT_PREFERENCES,
+  DENSITIES,
   LANGUAGES,
   SIDEBARS,
   THEMES,
+  applyAccent,
+  applyDensity,
+  applyReduceMotion,
   getPreferences,
   preferencesQueryKey,
   updatePreferences as updatePreferencesRequest,
+  type AccentPreference,
+  type DensityPreference,
   type LanguagePreference,
   type PreferencesPatch,
   type ThemePreference,
@@ -45,6 +53,26 @@ function isSidebar(value: unknown): value is UserPreferences["sidebar"] {
   return typeof value === "string" && (SIDEBARS as readonly string[]).includes(value);
 }
 
+function isDensity(value: unknown): value is DensityPreference {
+  return typeof value === "string" && (DENSITIES as readonly string[]).includes(value);
+}
+
+function isAccent(value: unknown): value is AccentPreference {
+  return typeof value === "string" && (ACCENTS as readonly string[]).includes(value);
+}
+
+function asBoolean(value: unknown, fallback: boolean) {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function asString(value: unknown, fallback: string) {
+  return typeof value === "string" ? value : fallback;
+}
+
+function asWorkspaceId(value: unknown): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
+}
+
 function parsePreferences(value: unknown): UserPreferences | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
@@ -53,11 +81,43 @@ function parsePreferences(value: unknown): UserPreferences | null {
   }
   if (typeof raw.notifications !== "boolean") return null;
   return {
+    ...DEFAULT_PREFERENCES,
     theme: raw.theme,
     language: raw.language,
     notifications: raw.notifications,
     sidebar: raw.sidebar,
+    density: isDensity(raw.density) ? raw.density : DEFAULT_PREFERENCES.density,
+    accent: isAccent(raw.accent) ? raw.accent : DEFAULT_PREFERENCES.accent,
+    reduceMotion: asBoolean(raw.reduceMotion, DEFAULT_PREFERENCES.reduceMotion),
+    notifyMentions: asBoolean(raw.notifyMentions, DEFAULT_PREFERENCES.notifyMentions),
+    notifyAssignments: asBoolean(raw.notifyAssignments, DEFAULT_PREFERENCES.notifyAssignments),
+    notifyDueDates: asBoolean(raw.notifyDueDates, DEFAULT_PREFERENCES.notifyDueDates),
+    notifyFiles: asBoolean(raw.notifyFiles, DEFAULT_PREFERENCES.notifyFiles),
+    notifyDigest: asBoolean(raw.notifyDigest, DEFAULT_PREFERENCES.notifyDigest),
+    twoFactor: asBoolean(raw.twoFactor, DEFAULT_PREFERENCES.twoFactor),
+    loginAlerts: asBoolean(raw.loginAlerts, DEFAULT_PREFERENCES.loginAlerts),
+    slack: asBoolean(raw.slack, DEFAULT_PREFERENCES.slack),
+    github: asBoolean(raw.github, DEFAULT_PREFERENCES.github),
+    figma: asBoolean(raw.figma, DEFAULT_PREFERENCES.figma),
+    googleDrive: asBoolean(raw.googleDrive, DEFAULT_PREFERENCES.googleDrive),
+    fullName: asString(raw.fullName, DEFAULT_PREFERENCES.fullName),
+    email: asString(raw.email, DEFAULT_PREFERENCES.email),
+    jobTitle: asString(raw.jobTitle, DEFAULT_PREFERENCES.jobTitle),
+    timezone: asString(raw.timezone, DEFAULT_PREFERENCES.timezone),
+    bio: asString(raw.bio, DEFAULT_PREFERENCES.bio),
+    workspaceId: asWorkspaceId(raw.workspaceId),
+    workspaceName: asString(raw.workspaceName, DEFAULT_PREFERENCES.workspaceName),
+    guestAccess: asBoolean(raw.guestAccess, DEFAULT_PREFERENCES.guestAccess),
+    require2fa: asBoolean(raw.require2fa, DEFAULT_PREFERENCES.require2fa),
+    publicTemplates: asBoolean(raw.publicTemplates, DEFAULT_PREFERENCES.publicTemplates),
   };
+}
+
+function normalizePreferences(
+  value: unknown,
+  fallback: UserPreferences = DEFAULT_PREFERENCES,
+): UserPreferences {
+  return parsePreferences({ ...fallback, ...(value && typeof value === "object" ? value : {}) }) ?? fallback;
 }
 
 function readCachedPreferences(): UserPreferences | null {
@@ -90,8 +150,18 @@ function applyLanguage(language: LanguagePreference) {
   document.documentElement.lang = language;
 }
 
+function applyAppearance(preferences: UserPreferences) {
+  applyTheme(preferences.theme);
+  applyLanguage(preferences.language);
+  applyAccent(preferences.accent);
+  applyDensity(preferences.density);
+  applyReduceMotion(preferences.reduceMotion);
+}
+
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
+  const { activeWorkspace } = useWorkspace();
+  const workspaceId = activeWorkspace?.id ?? null;
   const [preferences, setPreferences] = useState<UserPreferences>(
     () => readCachedPreferences() ?? DEFAULT_PREFERENCES,
   );
@@ -99,9 +169,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [saving, setSaving] = useState(false);
 
   useLayoutEffect(() => {
-    applyTheme(preferences.theme);
-    applyLanguage(preferences.language);
-  }, [preferences.theme, preferences.language]);
+    applyAppearance(preferences);
+  }, [preferences]);
 
   useEffect(() => {
     if (preferences.theme !== "system") return;
@@ -117,11 +186,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       try {
-        const { preferences: next } = await getPreferences();
+        const { preferences: next } = await getPreferences(workspaceId);
         if (cancelled) return;
-        setPreferences(next);
-        cachePreferences(next);
-        queryClient.setQueryData(preferencesQueryKey(), { preferences: next });
+        const merged = normalizePreferences(next, preferences);
+        setPreferences(merged);
+        cachePreferences(merged);
+        queryClient.setQueryData(preferencesQueryKey(workspaceId), { preferences: merged });
       } catch (err) {
         console.error("Failed to load preferences:", err);
       } finally {
@@ -132,20 +202,29 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [queryClient]);
+    // Reload when the active workspace changes so workspace settings stay in sync.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryClient, workspaceId]);
 
-  const updatePreferences = useCallback(async (patch: PreferencesPatch) => {
-    setSaving(true);
-    try {
-      const { preferences: next } = await updatePreferencesRequest(patch);
-      setPreferences(next);
-      cachePreferences(next);
-      queryClient.setQueryData(preferencesQueryKey(), { preferences: next });
-      return next;
-    } finally {
-      setSaving(false);
-    }
-  }, [queryClient]);
+  const updatePreferences = useCallback(
+    async (patch: PreferencesPatch) => {
+      setSaving(true);
+      try {
+        const { preferences: next } = await updatePreferencesRequest({
+          ...patch,
+          ...(workspaceId && patch.workspaceId === undefined ? { workspaceId } : {}),
+        });
+        const merged = normalizePreferences(next, preferences);
+        setPreferences(merged);
+        cachePreferences(merged);
+        queryClient.setQueryData(preferencesQueryKey(workspaceId), { preferences: merged });
+        return merged;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [queryClient, workspaceId, preferences],
+  );
 
   const value = useMemo<PreferencesContextValue>(
     () => ({

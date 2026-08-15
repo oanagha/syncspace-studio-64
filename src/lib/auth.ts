@@ -54,6 +54,12 @@ export function getUser(): AuthUser | null {
   }
 }
 
+export function updateStoredUser(patch: Partial<AuthUser>) {
+  const current = getUser();
+  if (!current) return;
+  localStorage.setItem(USER_KEY, JSON.stringify({ ...current, ...patch }));
+}
+
 export function clearAuth() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(TOKEN_KEY);

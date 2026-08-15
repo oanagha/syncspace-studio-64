@@ -358,3 +358,20 @@
   background-size: 200% 100%;
   animation: shimmer 1.8s linear infinite;
 }
+
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+html[data-density="compact"] .surface-card {
+  padding: 1.1rem;
+}
+
+html[data-density="compact"] h1 {
+  font-size: 1.45rem;
+}

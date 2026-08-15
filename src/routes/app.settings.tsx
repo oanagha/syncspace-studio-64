@@ -20,10 +20,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ApiRequestError } from "@/lib/api";
+import { updateStoredUser } from "@/lib/auth";
+import { canRenameWorkspace, workspaceInitials } from "@/services/workspace.service";
 import {
+  ACCENT_THEMES,
+  ACCENTS,
   LANGUAGE_LABELS,
   LANGUAGES,
+  applyAccent,
+  applyDensity,
+  applyReduceMotion,
+  type AccentPreference,
+  type DensityPreference,
   type LanguagePreference,
+  type PreferencesPatch,
   type SidebarPreference,
   type ThemePreference,
   type UserPreferences,
@@ -49,25 +59,64 @@ const tabs = [
   { v: "connected", label: "Connected", icon: Link2 },
 ];
 
+const connectedAccounts = [
+  { key: "slack" as const, name: "Slack", desc: "Post task updates to #product" },
+  { key: "github" as const, name: "GitHub", desc: "Link pull requests to tasks" },
+  { key: "figma" as const, name: "Figma", desc: "Embed live design previews" },
+  { key: "googleDrive" as const, name: "Google Drive", desc: "Attach docs without uploading" },
+];
+
 function SettingsPage() {
-  const { activeWorkspace } = useWorkspace();
-  const { preferences, saving, updatePreferences } = usePreferences();
+  const { activeWorkspace, fetchWorkspaces } = useWorkspace();
+  const { preferences, loading, saving, updatePreferences } = usePreferences();
   const [draft, setDraft] = useState<UserPreferences>(preferences);
-  const workspaceName = activeWorkspace?.name || "your workspace";
-  const workspaceSlug = workspaceName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const canEditWorkspace = canRenameWorkspace(activeWorkspace?.role);
+  const workspaceSlug = (draft.workspaceName || activeWorkspace?.name || "workspace")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 
   useEffect(() => {
-    setDraft(preferences);
-  }, [preferences]);
+    setDraft({
+      ...preferences,
+      workspaceName: preferences.workspaceName || activeWorkspace?.name || "",
+    });
+  }, [preferences, activeWorkspace?.name]);
 
-  const savePreferences = async (patch: Partial<UserPreferences>) => {
+  useEffect(() => {
+    applyAccent(draft.accent);
+    applyDensity(draft.density);
+    applyReduceMotion(draft.reduceMotion);
+    return () => {
+      applyAccent(preferences.accent);
+      applyDensity(preferences.density);
+      applyReduceMotion(preferences.reduceMotion);
+    };
+  }, [draft.accent, draft.density, draft.reduceMotion, preferences.accent, preferences.density, preferences.reduceMotion]);
+
+  const savePreferences = async (patch: PreferencesPatch, success = "Settings saved") => {
     try {
-      await updatePreferences(patch);
-      toast.success("Preferences saved");
+      const next = await updatePreferences(patch);
+      if (patch.fullName || patch.email) {
+        updateStoredUser({
+          ...(patch.fullName ? { name: next.fullName } : {}),
+          ...(patch.email ? { email: next.email } : {}),
+        });
+      }
+      if (patch.workspaceName && activeWorkspace) {
+        await fetchWorkspaces().catch(() => undefined);
+      }
+      toast.success(success);
+      return next;
     } catch (err) {
-      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to save preferences.");
+      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to save settings.");
+      return null;
     }
   };
+
+  const initials = workspaceInitials(draft.fullName || "Account");
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -93,7 +142,7 @@ function SettingsPage() {
           <Card title="Personal information" desc="This is how teammates see you across SyncSpace.">
             <div className="flex items-center gap-4">
               <span className="grid size-16 place-items-center rounded-3xl gradient-brand text-lg font-bold text-primary-foreground">
-                AM
+                {initials || "?"}
               </span>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => toast.success("Photo updated")}>Upload photo</Button>
@@ -101,10 +150,31 @@ function SettingsPage() {
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <FieldInput id="fn" label="Full name" value="Ava Mitchell" />
-              <FieldInput id="em" label="Email" value="ava@syncspace.io" />
-              <FieldInput id="rl" label="Job title" value="Head of Product" />
-              <FieldInput id="tz" label="Timezone" value="GMT+1 · Lisbon" />
+              <FieldInput
+                id="fn"
+                label="Full name"
+                value={draft.fullName}
+                onChange={(fullName) => setDraft((current) => ({ ...current, fullName }))}
+              />
+              <FieldInput
+                id="em"
+                label="Email"
+                value={draft.email}
+                type="email"
+                onChange={(email) => setDraft((current) => ({ ...current, email }))}
+              />
+              <FieldInput
+                id="rl"
+                label="Job title"
+                value={draft.jobTitle}
+                onChange={(jobTitle) => setDraft((current) => ({ ...current, jobTitle }))}
+              />
+              <FieldInput
+                id="tz"
+                label="Timezone"
+                value={draft.timezone}
+                onChange={(timezone) => setDraft((current) => ({ ...current, timezone }))}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="bio">Bio</Label>
@@ -112,29 +182,63 @@ function SettingsPage() {
                 id="bio"
                 rows={3}
                 className="rounded-2xl"
-                defaultValue="Product lead at Northwind Studio. Obsessed with fast tools and calm interfaces."
+                value={draft.bio}
+                onChange={(event) => setDraft((current) => ({ ...current, bio: event.target.value }))}
               />
             </div>
-            <SaveRow />
+            <SaveRow
+              saving={saving}
+              disabled={loading}
+              onCancel={() => setDraft(preferences)}
+              onSave={() =>
+                savePreferences({
+                  fullName: draft.fullName,
+                  email: draft.email,
+                  jobTitle: draft.jobTitle,
+                  timezone: draft.timezone,
+                  bio: draft.bio,
+                })
+              }
+            />
           </Card>
         </TabsContent>
 
         <TabsContent value="security">
           <Card title="Security" desc="Protect your account and active sessions.">
             <div className="grid gap-4 sm:grid-cols-2">
-              <FieldInput id="cp" label="Current password" value="" type="password" />
-              <FieldInput id="np" label="New password" value="" type="password" />
+              <FieldInput
+                id="cp"
+                label="Current password"
+                value={currentPassword}
+                type="password"
+                onChange={setCurrentPassword}
+              />
+              <FieldInput
+                id="np"
+                label="New password"
+                value={newPassword}
+                type="password"
+                onChange={setNewPassword}
+              />
             </div>
             <Separator />
-            <Toggle label="Two-factor authentication" desc="Require a 6-digit code from your authenticator app." defaultOn />
-            <Toggle label="Login alerts" desc="Email me when a new device signs in." defaultOn />
+            <Toggle
+              label="Two-factor authentication"
+              desc="Require a 6-digit code from your authenticator app."
+              checked={draft.twoFactor}
+              onCheckedChange={(twoFactor) => setDraft((current) => ({ ...current, twoFactor }))}
+            />
+            <Toggle
+              label="Login alerts"
+              desc="Email me when a new device signs in."
+              checked={draft.loginAlerts}
+              onCheckedChange={(loginAlerts) => setDraft((current) => ({ ...current, loginAlerts }))}
+            />
             <Separator />
             <div className="space-y-3">
               <p className="text-sm font-bold">Active sessions</p>
               {[
-                ["MacBook Pro · Lisbon", "Current session"],
-                ["iPhone 15 · Lisbon", "2 hours ago"],
-                ["Chrome · Berlin", "3 days ago"],
+                ["This browser", "Current session"],
               ].map(([d, t]) => (
                 <div key={d} className="flex items-center justify-between rounded-2xl border border-border px-4 py-3">
                   <div>
@@ -145,7 +249,30 @@ function SettingsPage() {
                 </div>
               ))}
             </div>
-            <SaveRow />
+            <SaveRow
+              saving={saving}
+              disabled={loading}
+              onCancel={() => {
+                setDraft(preferences);
+                setCurrentPassword("");
+                setNewPassword("");
+              }}
+              onSave={async () => {
+                const patch: PreferencesPatch = {
+                  twoFactor: draft.twoFactor,
+                  loginAlerts: draft.loginAlerts,
+                };
+                if (currentPassword || newPassword) {
+                  patch.currentPassword = currentPassword;
+                  patch.newPassword = newPassword;
+                }
+                const next = await savePreferences(patch);
+                if (next) {
+                  setCurrentPassword("");
+                  setNewPassword("");
+                }
+              }}
+            />
           </Card>
         </TabsContent>
 
@@ -157,15 +284,55 @@ function SettingsPage() {
               checked={draft.notifications}
               onCheckedChange={(notifications) => setDraft((current) => ({ ...current, notifications }))}
             />
-            <Toggle label="Mentions" desc="Someone @mentions you in a comment or doc." defaultOn disabled={!draft.notifications} />
-            <Toggle label="Task assignments" desc="A task is assigned to you or reassigned." defaultOn disabled={!draft.notifications} />
-            <Toggle label="Due date reminders" desc="24 hours before a task is due." defaultOn disabled={!draft.notifications} />
-            <Toggle label="File uploads" desc="New files added to projects you follow." disabled={!draft.notifications} />
-            <Toggle label="Weekly digest" desc="Monday summary of team productivity." defaultOn disabled={!draft.notifications} />
+            <Toggle
+              label="Mentions"
+              desc="Someone @mentions you in a comment or doc."
+              checked={draft.notifyMentions}
+              onCheckedChange={(notifyMentions) => setDraft((current) => ({ ...current, notifyMentions }))}
+              disabled={!draft.notifications}
+            />
+            <Toggle
+              label="Task assignments"
+              desc="A task is assigned to you or reassigned."
+              checked={draft.notifyAssignments}
+              onCheckedChange={(notifyAssignments) => setDraft((current) => ({ ...current, notifyAssignments }))}
+              disabled={!draft.notifications}
+            />
+            <Toggle
+              label="Due date reminders"
+              desc="24 hours before a task is due."
+              checked={draft.notifyDueDates}
+              onCheckedChange={(notifyDueDates) => setDraft((current) => ({ ...current, notifyDueDates }))}
+              disabled={!draft.notifications}
+            />
+            <Toggle
+              label="File uploads"
+              desc="New files added to projects you follow."
+              checked={draft.notifyFiles}
+              onCheckedChange={(notifyFiles) => setDraft((current) => ({ ...current, notifyFiles }))}
+              disabled={!draft.notifications}
+            />
+            <Toggle
+              label="Weekly digest"
+              desc="Monday summary of team productivity."
+              checked={draft.notifyDigest}
+              onCheckedChange={(notifyDigest) => setDraft((current) => ({ ...current, notifyDigest }))}
+              disabled={!draft.notifications}
+            />
             <SaveRow
               saving={saving}
+              disabled={loading}
               onCancel={() => setDraft(preferences)}
-              onSave={() => savePreferences({ notifications: draft.notifications })}
+              onSave={() =>
+                savePreferences({
+                  notifications: draft.notifications,
+                  notifyMentions: draft.notifyMentions,
+                  notifyAssignments: draft.notifyAssignments,
+                  notifyDueDates: draft.notifyDueDates,
+                  notifyFiles: draft.notifyFiles,
+                  notifyDigest: draft.notifyDigest,
+                })
+              }
             />
           </Card>
         </TabsContent>
@@ -222,7 +389,12 @@ function SettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Density</Label>
-                <Select defaultValue="comfortable">
+                <Select
+                  value={draft.density}
+                  onValueChange={(density) =>
+                    setDraft((current) => ({ ...current, density: density as DensityPreference }))
+                  }
+                >
                   <SelectTrigger className="h-11 rounded-2xl"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="comfortable">Comfortable</SelectItem>
@@ -232,16 +404,28 @@ function SettingsPage() {
               </div>
             </div>
 
-            <AccentPicker />
-            <Toggle label="Reduce motion" desc="Minimise parallax and card animations." />
+            <AccentPicker
+              value={draft.accent}
+              onChange={(accent) => setDraft((current) => ({ ...current, accent }))}
+            />
+            <Toggle
+              label="Reduce motion"
+              desc="Minimise parallax and card animations."
+              checked={draft.reduceMotion}
+              onCheckedChange={(reduceMotion) => setDraft((current) => ({ ...current, reduceMotion }))}
+            />
             <SaveRow
               saving={saving}
+              disabled={loading}
               onCancel={() => setDraft(preferences)}
               onSave={() =>
                 savePreferences({
                   theme: draft.theme,
                   language: draft.language,
                   sidebar: draft.sidebar,
+                  density: draft.density,
+                  accent: draft.accent,
+                  reduceMotion: draft.reduceMotion,
                 })
               }
             />
@@ -249,40 +433,93 @@ function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="workspace">
-          <Card title="Workspace preferences" desc={`Applies to everyone in ${workspaceName}.`}>
+          <Card
+            title="Workspace preferences"
+            desc={`Applies to everyone in ${draft.workspaceName || activeWorkspace?.name || "your workspace"}.`}
+          >
             <div className="grid gap-4 sm:grid-cols-2">
-              <FieldInput id="wn" label="Workspace name" value={workspaceName} />
-              <FieldInput id="wu" label="Workspace URL" value={`syncspace.io/${workspaceSlug || "workspace"}`} />
+              <FieldInput
+                id="wn"
+                label="Workspace name"
+                value={draft.workspaceName}
+                disabled={!canEditWorkspace}
+                onChange={(workspaceName) => setDraft((current) => ({ ...current, workspaceName }))}
+              />
+              <FieldInput
+                id="wu"
+                label="Workspace URL"
+                value={`syncspace.io/${workspaceSlug || "workspace"}`}
+                readOnly
+              />
             </div>
-            <Toggle label="Guest client access" desc="Allow comment-only guests on shared projects." defaultOn />
-            <Toggle label="Require 2FA for all members" desc="Enforced on next sign-in." />
-            <Toggle label="Public project templates" desc="Let members publish templates to the gallery." defaultOn />
-            <SaveRow />
+            <Toggle
+              label="Guest client access"
+              desc="Allow comment-only guests on shared projects."
+              checked={draft.guestAccess}
+              onCheckedChange={(guestAccess) => setDraft((current) => ({ ...current, guestAccess }))}
+              disabled={!canEditWorkspace}
+            />
+            <Toggle
+              label="Require 2FA for all members"
+              desc="Enforced on next sign-in."
+              checked={draft.require2fa}
+              onCheckedChange={(require2fa) => setDraft((current) => ({ ...current, require2fa }))}
+              disabled={!canEditWorkspace}
+            />
+            <Toggle
+              label="Public project templates"
+              desc="Let members publish templates to the gallery."
+              checked={draft.publicTemplates}
+              onCheckedChange={(publicTemplates) => setDraft((current) => ({ ...current, publicTemplates }))}
+              disabled={!canEditWorkspace}
+            />
+            {!canEditWorkspace && (
+              <p className="text-xs text-muted-foreground">Only owners and admins can change workspace settings.</p>
+            )}
+            <SaveRow
+              saving={saving}
+              disabled={loading || !canEditWorkspace || !activeWorkspace}
+              onCancel={() => setDraft(preferences)}
+              onSave={() =>
+                savePreferences({
+                  workspaceId: activeWorkspace?.id,
+                  workspaceName: draft.workspaceName,
+                  guestAccess: draft.guestAccess,
+                  require2fa: draft.require2fa,
+                  publicTemplates: draft.publicTemplates,
+                })
+              }
+            />
           </Card>
         </TabsContent>
 
         <TabsContent value="connected">
           <Card title="Connected accounts" desc="Bring context from the tools you already use.">
-            {[
-              ["Slack", "Post task updates to #product", true],
-              ["GitHub", "Link pull requests to tasks", true],
-              ["Figma", "Embed live design previews", false],
-              ["Google Drive", "Attach docs without uploading", false],
-            ].map(([name, desc, on]) => (
-              <div key={name as string} className="flex items-center justify-between rounded-2xl border border-border px-4 py-3.5">
-                <div className="min-w-0">
-                  <p className="text-sm font-bold">{name}</p>
-                  <p className="truncate text-xs text-muted-foreground">{desc}</p>
+            {connectedAccounts.map((account) => {
+              const on = draft[account.key];
+              return (
+                <div key={account.key} className="flex items-center justify-between rounded-2xl border border-border px-4 py-3.5">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold">{account.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{account.desc}</p>
+                  </div>
+                  <Button
+                    variant={on ? "outline" : "hero"}
+                    size="sm"
+                    disabled={saving}
+                    onClick={async () => {
+                      const next = await savePreferences(
+                        { [account.key]: !on },
+                        `${account.name} ${on ? "disconnected" : "connected"}`,
+                      );
+                      if (!next) return;
+                    }}
+                  >
+                    {on ? "Disconnect" : "Connect"}
+                  </Button>
                 </div>
-                <Button
-                  variant={on ? "outline" : "hero"}
-                  size="sm"
-                  onClick={() => toast.success(`${name} ${on ? "disconnected" : "connected"}`)}
-                >
-                  {on ? "Disconnect" : "Connect"}
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </Card>
         </TabsContent>
       </Tabs>
@@ -302,11 +539,35 @@ function Card({ title, desc, children }: { title: string; desc: string; children
   );
 }
 
-function FieldInput({ id, label, value, type = "text" }: { id: string; label: string; value: string; type?: string }) {
+function FieldInput({
+  id,
+  label,
+  value,
+  type = "text",
+  onChange,
+  disabled,
+  readOnly,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  type?: string;
+  onChange?: (value: string) => void;
+  disabled?: boolean;
+  readOnly?: boolean;
+}) {
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      <Input id={id} type={type} defaultValue={value} className="h-11 rounded-2xl" />
+      <Input
+        id={id}
+        type={type}
+        value={value}
+        readOnly={readOnly}
+        disabled={disabled}
+        onChange={(event) => onChange?.(event.target.value)}
+        className="h-11 rounded-2xl"
+      />
     </div>
   );
 }
@@ -314,15 +575,13 @@ function FieldInput({ id, label, value, type = "text" }: { id: string; label: st
 function Toggle({
   label,
   desc,
-  defaultOn,
   checked,
   onCheckedChange,
   disabled,
 }: {
   label: string;
   desc: string;
-  defaultOn?: boolean;
-  checked?: boolean;
+  checked: boolean;
   onCheckedChange?: (checked: boolean) => void;
   disabled?: boolean;
 }) {
@@ -332,22 +591,19 @@ function Toggle({
         <p className="text-sm font-bold">{label}</p>
         <p className="text-xs text-muted-foreground">{desc}</p>
       </div>
-      <Switch
-        checked={checked}
-        defaultChecked={checked === undefined ? defaultOn ?? false : undefined}
-        onCheckedChange={onCheckedChange}
-        disabled={disabled}
-      />
+      <Switch checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
     </div>
   );
 }
 
 function SaveRow({
   saving,
+  disabled,
   onCancel,
   onSave,
 }: {
   saving?: boolean;
+  disabled?: boolean;
   onCancel?: () => void;
   onSave?: () => void;
 }) {
@@ -355,6 +611,7 @@ function SaveRow({
     <div className="flex justify-end gap-2">
       <Button
         variant="ghost"
+        disabled={saving}
         onClick={() => {
           onCancel?.();
           toast("Changes discarded");
@@ -362,68 +619,44 @@ function SaveRow({
       >
         Cancel
       </Button>
-      <Button
-        variant="hero"
-        disabled={saving}
-        onClick={() => {
-          if (onSave) {
-            onSave();
-            return;
-          }
-          toast.success("Settings saved");
-        }}
-      >
+      <Button variant="hero" disabled={saving || disabled} onClick={() => onSave?.()}>
         {saving ? "Saving…" : "Save changes"}
       </Button>
     </div>
   );
 }
 
-const accents = [
-  { name: "Ocean", hex: "#1A4A6E", primary: "oklch(0.42 0.078 240)", accent: "oklch(0.746 0.069 187)" },
-  { name: "Teal", hex: "#2D8A9E", primary: "oklch(0.55 0.085 215)", accent: "oklch(0.76 0.075 195)" },
-  { name: "Aqua", hex: "#5CBDB9", primary: "oklch(0.63 0.075 190)", accent: "oklch(0.8 0.07 185)" },
-  { name: "Emerald", hex: "#2F9E7D", primary: "oklch(0.58 0.095 168)", accent: "oklch(0.76 0.08 165)" },
-  { name: "Amber", hex: "#D9A441", primary: "oklch(0.62 0.12 82)", accent: "oklch(0.8 0.1 88)" },
-];
-
-function AccentPicker() {
-  const [active, setActive] = useState(accents[0]!.name);
-
-  const apply = (a: (typeof accents)[number]) => {
-    setActive(a.name);
-    const root = document.documentElement;
-    root.style.setProperty("--primary", a.primary);
-    root.style.setProperty("--ring", a.primary);
-    root.style.setProperty("--accent", a.accent);
-    root.style.setProperty("--chart-1", a.primary);
-    root.style.setProperty("--sidebar-primary", a.primary);
-    root.style.setProperty(
-      "--gradient-brand",
-      `linear-gradient(120deg, color-mix(in oklab, ${a.primary} 78%, black), ${a.primary} 45%, ${a.accent})`,
-    );
-  };
-
+function AccentPicker({
+  value,
+  onChange,
+}: {
+  value: AccentPreference;
+  onChange: (accent: AccentPreference) => void;
+}) {
   return (
     <div className="space-y-2">
       <Label>Accent color</Label>
       <div className="flex flex-wrap gap-3">
-        {accents.map((a) => (
-          <button
-            key={a.name}
-            type="button"
-            onClick={() => apply(a)}
-            className="grid size-10 place-items-center rounded-2xl transition-transform hover:scale-110"
-            style={{
-              background: a.hex,
-              boxShadow: active === a.name ? `0 0 0 2px var(--card), 0 0 0 4px ${a.hex}` : undefined,
-            }}
-            aria-label={`Accent ${a.name}`}
-            aria-pressed={active === a.name}
-          >
-            {active === a.name && <Check className="size-4" style={{ color: "#fff" }} />}
-          </button>
-        ))}
+        {ACCENTS.map((key) => {
+          const theme = ACCENT_THEMES[key];
+          const active = value === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onChange(key)}
+              className="grid size-10 place-items-center rounded-2xl transition-transform hover:scale-110"
+              style={{
+                background: theme.hex,
+                boxShadow: active ? `0 0 0 2px var(--card), 0 0 0 4px ${theme.hex}` : undefined,
+              }}
+              aria-label={`Accent ${theme.name}`}
+              aria-pressed={active}
+            >
+              {active && <Check className="size-4" style={{ color: "#fff" }} />}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
