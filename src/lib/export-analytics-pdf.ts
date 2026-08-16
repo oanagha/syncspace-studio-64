@@ -13,10 +13,7 @@ function rangeLabel(range: AnalyticsRange) {
   return RANGE_LABELS.find((item) => item.value === range)?.label ?? range;
 }
 
-/**
- * Opens a print-ready analytics report. Users can Save as PDF from the browser print dialog.
- */
-export function exportAnalyticsPdf(input: {
+function buildReportHtml(input: {
   workspaceName: string;
   range: AnalyticsRange;
   data: AnalyticsDashboard;
@@ -26,29 +23,30 @@ export function exportAnalyticsPdf(input: {
     ? new Date(data.generated_at).toLocaleString()
     : new Date().toLocaleString();
   const label = rangeLabel(range);
+  const stats = data.stats;
 
   const kpiRows = [
-    ["Tasks completed", `${data.stats.tasks_completed}`, data.stats.tasks_completed_delta],
-    ["Avg. cycle time", `${data.stats.avg_cycle_time}d`, data.stats.cycle_time_delta],
-    ["On-time delivery", `${data.stats.on_time_delivery}%`, data.stats.on_time_delta],
-    ["Active collaborators", `${data.stats.active_collaborators}`, data.stats.collaborators_delta],
+    ["Tasks completed", `${stats.tasks_completed}`, stats.tasks_completed_delta],
+    ["Avg. cycle time", `${stats.avg_cycle_time}d`, stats.cycle_time_delta],
+    ["On-time delivery", `${stats.on_time_delivery}%`, stats.on_time_delta],
+    ["Active collaborators", `${stats.active_collaborators}`, stats.collaborators_delta],
   ];
 
-  const statusRows = data.status_breakdown
+  const statusRows = (data.status_breakdown ?? [])
     .map(
       (slice) =>
         `<tr><td>${escapeHtml(slice.name)}</td><td style="text-align:right">${slice.value}</td></tr>`,
     )
     .join("");
 
-  const workloadRows = data.workload
+  const workloadRows = (data.workload ?? [])
     .map(
       (slice) =>
         `<tr><td>${escapeHtml(slice.name)}</td><td style="text-align:right">${slice.value}</td></tr>`,
     )
     .join("");
 
-  const projectRows = data.project_health
+  const projectRows = (data.project_health ?? [])
     .map(
       (project) =>
         `<tr>
@@ -60,7 +58,7 @@ export function exportAnalyticsPdf(input: {
     )
     .join("");
 
-  const dueRows = data.due_today
+  const dueRows = (data.due_today ?? [])
     .slice(0, 12)
     .map(
       (task) =>
@@ -72,11 +70,11 @@ export function exportAnalyticsPdf(input: {
     )
     .join("");
 
-  const html = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>SyncSpace Analytics — ${escapeHtml(workspaceName)}</title>
+  <title>${escapeHtml(workspaceName)} — Analytics (${escapeHtml(label)})</title>
   <style>
     :root { color-scheme: light; }
     body { font-family: "Segoe UI", Arial, sans-serif; color: #111827; margin: 32px; line-height: 1.45; }
@@ -91,7 +89,6 @@ export function exportAnalyticsPdf(input: {
     .card .label { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }
     .card .value { font-size: 24px; font-weight: 750; margin-top: 4px; }
     .card .delta { font-size: 12px; color: #059669; margin-top: 2px; }
-    .score { font-size: 36px; font-weight: 800; margin: 0; }
     @media print {
       body { margin: 16px; }
       h2 { break-after: avoid; }
@@ -146,23 +143,96 @@ export function exportAnalyticsPdf(input: {
     <thead><tr><th>Task</th><th>Assignee</th><th>Due</th></tr></thead>
     <tbody>${dueRows || `<tr><td colspan="3">Nothing due today</td></tr>`}</tbody>
   </table>
-
-  <script>
-    window.addEventListener('load', function () {
-      setTimeout(function () {
-        window.focus();
-        window.print();
-      }, 250);
-    });
-  </script>
 </body>
 </html>`;
+}
 
-  const win = window.open("", "_blank", "noopener,noreferrer,width=960,height=720");
-  if (!win) {
-    throw new Error("Pop-up blocked. Allow pop-ups to export the PDF report.");
+/**
+ * Opens the browser print dialog for the analytics report (Save as PDF).
+ * Uses a hidden iframe so we never rely on window.open + noopener (which returns null).
+ * Resolves when the print dialog closes (or after a short fallback timeout).
+ */
+export function exportAnalyticsPdf(input: {
+  workspaceName: string;
+  range: AnalyticsRange;
+  data: AnalyticsDashboard;
+}): Promise<void> {
+  if (typeof document === "undefined") {
+    return Promise.reject(new Error("PDF export is only available in the browser."));
   }
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
+  if (!input.data?.stats) {
+    return Promise.reject(new Error("Analytics data is still loading. Try again in a moment."));
+  }
+
+  const html = buildReportHtml(input);
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("title", "Analytics PDF export");
+  iframe.setAttribute("aria-hidden", "true");
+  Object.assign(iframe.style, {
+    position: "fixed",
+    right: "0",
+    bottom: "0",
+    width: "0",
+    height: "0",
+    border: "0",
+    opacity: "0",
+    pointerEvents: "none",
+  });
+
+  document.body.appendChild(iframe);
+
+  const frameWindow = iframe.contentWindow;
+  const frameDocument = iframe.contentDocument ?? frameWindow?.document;
+  if (!frameWindow || !frameDocument) {
+    iframe.remove();
+    return Promise.reject(new Error("Could not prepare the PDF report. Try again."));
+  }
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+
+    const cleanup = () => {
+      try {
+        iframe.remove();
+      } catch {
+        /* ignore */
+      }
+    };
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      frameWindow.removeEventListener("afterprint", finish);
+      window.removeEventListener("afterprint", finish);
+      cleanup();
+      resolve();
+    };
+
+    // Backup for browsers where print() returns before the dialog closes.
+    frameWindow.addEventListener("afterprint", finish);
+    window.addEventListener("afterprint", finish);
+
+    frameDocument.open();
+    frameDocument.write(html);
+    frameDocument.close();
+
+    window.setTimeout(() => {
+      try {
+        frameWindow.focus();
+        // In most browsers this blocks until the print dialog is closed.
+        frameWindow.print();
+        // Clear the loading toast as soon as the dialog returns
+        // (afterprint often never fires on hidden iframes).
+        finish();
+      } catch {
+        cleanup();
+        if (!settled) {
+          settled = true;
+          frameWindow.removeEventListener("afterprint", finish);
+          window.removeEventListener("afterprint", finish);
+          reject(new Error("Could not open the print dialog."));
+        }
+      }
+    }, 300);
+  });
 }

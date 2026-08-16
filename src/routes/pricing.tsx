@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { PlanCta } from "@/components/site/PlanCta";
 import {
   Accordion,
   AccordionContent,
@@ -108,9 +108,13 @@ function PricingPage() {
                     ))}
                   </ul>
                   <div className="mt-7 pt-1">
-                    <Button asChild variant={p.popular ? "hero" : "glass"} className="w-full">
-                      <Link to="/signup">{p.cta}</Link>
-                    </Button>
+                    <PlanCta
+                      name={p.name}
+                      price={p.price}
+                      cta={p.cta}
+                      variant={p.popular ? "hero" : "glass"}
+                      className="w-full"
+                    />
                   </div>
                 </article>
               </Reveal>

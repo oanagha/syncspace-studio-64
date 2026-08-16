@@ -301,24 +301,31 @@ function AnalyticsPage() {
         <div>
           <h2 className="text-lg font-bold">Export report</h2>
           <p className="text-sm text-muted-foreground">
-            Download a PDF of the current analytics range via your browser’s print dialog.
+            Opens print — choose “Save as PDF” to download the current range.
           </p>
         </div>
         <div className="flex gap-2">
           <Button
             variant="hero"
-            disabled={exporting}
-            onClick={() => {
+            disabled={exporting || !data}
+            onClick={async () => {
+              if (!data) {
+                toast.error("Analytics data is still loading.");
+                return;
+              }
+              setExporting(true);
+              const toastId = toast.loading("Print dialog open — choose Save as PDF");
               try {
-                setExporting(true);
-                exportAnalyticsPdf({
+                await exportAnalyticsPdf({
                   workspaceName,
                   range,
                   data,
                 });
-                toast.success("Print dialog opened — choose Save as PDF");
+                toast.success("Export complete", { id: toastId });
               } catch (err) {
-                toast.error(err instanceof Error ? err.message : "Failed to export PDF.");
+                toast.error(err instanceof Error ? err.message : "Failed to export PDF.", {
+                  id: toastId,
+                });
               } finally {
                 setExporting(false);
               }

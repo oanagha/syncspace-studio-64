@@ -157,8 +157,8 @@ function applyAppearance(preferences: UserPreferences) {
   applyTheme(preferences.theme);
   applyLanguage(preferences.language);
   applyAccent(preferences.accent);
-  applyDensity(preferences.density);
-  applyReduceMotion(preferences.reduceMotion);
+  applyDensity("comfortable");
+  applyReduceMotion(true);
 }
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {

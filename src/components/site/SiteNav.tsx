@@ -27,7 +27,7 @@ export function SiteNav() {
     <header className="fixed inset-x-0 top-0 z-50 px-4 pt-4">
       <nav
         className={cn(
-          "mx-auto flex max-w-6xl items-center gap-4 rounded-3xl px-4 py-3 transition-all duration-500 sm:px-6",
+          "mx-auto flex max-w-6xl items-center gap-4 rounded-3xl px-4 py-3 transition-all duration-200 sm:px-6",
           scrolled ? "glass shadow-soft" : "border border-transparent",
         )}
       >

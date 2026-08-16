@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -29,25 +29,44 @@ import { canDeleteWorkspace, canRenameWorkspace, workspaceInitials } from "@/ser
 import {
   ACCENT_THEMES,
   ACCENTS,
-  LANGUAGE_LABELS,
-  LANGUAGES,
   applyAccent,
-  applyDensity,
-  applyReduceMotion,
   removeAvatar,
   resolveAvatarUrl,
   uploadAvatar,
   validateAvatarFile,
   type AccentPreference,
-  type DensityPreference,
-  type LanguagePreference,
   type PreferencesPatch,
   type SidebarPreference,
   type ThemePreference,
   type UserPreferences,
 } from "@/services/settings.service";
 
+const tabs = [
+  { v: "profile", label: "Profile", icon: User },
+  { v: "security", label: "Security", icon: Shield },
+  { v: "notifications", label: "Notifications", icon: Bell },
+  { v: "appearance", label: "Appearance", icon: Palette },
+  { v: "workspace", label: "Workspace", icon: SlidersHorizontal },
+  { v: "connected", label: "Connected", icon: Link2 },
+] as const;
+
+type SettingsTab = (typeof tabs)[number]["v"];
+
+const TAB_VALUES = new Set<string>(tabs.map((tab) => tab.v));
+
+function isSettingsTab(value: unknown): value is SettingsTab {
+  return typeof value === "string" && TAB_VALUES.has(value);
+}
+
+type SettingsSearch = {
+  tab?: SettingsTab;
+};
+
 export const Route = createFileRoute("/app/settings")({
+  validateSearch: (search: Record<string, unknown>): SettingsSearch => {
+    const tab = search["tab"];
+    return isSettingsTab(tab) ? { tab } : {};
+  },
   head: () => ({
     meta: [
       { title: "Profile & Settings — SyncSpace Workspace" },
@@ -58,15 +77,6 @@ export const Route = createFileRoute("/app/settings")({
   component: SettingsPage,
 });
 
-const tabs = [
-  { v: "profile", label: "Profile", icon: User },
-  { v: "security", label: "Security", icon: Shield },
-  { v: "notifications", label: "Notifications", icon: Bell },
-  { v: "appearance", label: "Appearance", icon: Palette },
-  { v: "workspace", label: "Workspace", icon: SlidersHorizontal },
-  { v: "connected", label: "Connected", icon: Link2 },
-];
-
 const connectedAccounts = [
   { key: "slack" as const, name: "Slack", desc: "Post task updates to #product" },
   { key: "github" as const, name: "GitHub", desc: "Link pull requests to tasks" },
@@ -75,6 +85,9 @@ const connectedAccounts = [
 ];
 
 function SettingsPage() {
+  const navigate = useNavigate({ from: Route.fullPath });
+  const { tab } = Route.useSearch();
+  const activeTab = tab ?? "profile";
   const { activeWorkspace, fetchWorkspaces, deleteWorkspace, deleting } = useWorkspace();
   const { preferences, loading, saving, updatePreferences, replacePreferences } = usePreferences();
   const [draft, setDraft] = useState<UserPreferences>(preferences);
@@ -100,14 +113,10 @@ function SettingsPage() {
 
   useEffect(() => {
     applyAccent(draft.accent);
-    applyDensity(draft.density);
-    applyReduceMotion(draft.reduceMotion);
     return () => {
       applyAccent(preferences.accent);
-      applyDensity(preferences.density);
-      applyReduceMotion(preferences.reduceMotion);
     };
-  }, [draft.accent, draft.density, draft.reduceMotion, preferences.accent, preferences.density, preferences.reduceMotion]);
+  }, [draft.accent, preferences.accent]);
 
   const savePreferences = async (patch: PreferencesPatch, success = "Settings saved") => {
     try {
@@ -194,7 +203,17 @@ function SettingsPage() {
         <p className="text-sm text-muted-foreground">Manage your account and workspace preferences.</p>
       </header>
 
-      <Tabs defaultValue="profile" className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={(next) => {
+          const value = isSettingsTab(next) ? next : "profile";
+          void navigate({
+            search: value === "profile" ? {} : { tab: value },
+            replace: true,
+          });
+        }}
+        className="space-y-6"
+      >
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-2xl bg-card p-1.5">
           {tabs.map((t) => (
             <TabsTrigger
@@ -437,7 +456,7 @@ function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="appearance">
-          <Card title="Appearance" desc="Theme, language, and sidebar stay saved across sessions.">
+          <Card title="Appearance" desc="Theme, accent, and sidebar stay saved across sessions.">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Theme</Label>
@@ -450,24 +469,6 @@ function SettingsPage() {
                     <SelectItem value="light">Light</SelectItem>
                     <SelectItem value="dark">Dark</SelectItem>
                     <SelectItem value="system">System</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Language</Label>
-                <Select
-                  value={draft.language}
-                  onValueChange={(language) =>
-                    setDraft((current) => ({ ...current, language: language as LanguagePreference }))
-                  }
-                >
-                  <SelectTrigger className="h-11 rounded-2xl"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGES.map((code) => (
-                      <SelectItem key={code} value={code}>
-                        {LANGUAGE_LABELS[code]}
-                      </SelectItem>
-                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -486,32 +487,11 @@ function SettingsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Density</Label>
-                <Select
-                  value={draft.density}
-                  onValueChange={(density) =>
-                    setDraft((current) => ({ ...current, density: density as DensityPreference }))
-                  }
-                >
-                  <SelectTrigger className="h-11 rounded-2xl"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="comfortable">Comfortable</SelectItem>
-                    <SelectItem value="compact">Compact</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
             <AccentPicker
               value={draft.accent}
               onChange={(accent) => setDraft((current) => ({ ...current, accent }))}
-            />
-            <Toggle
-              label="Reduce motion"
-              desc="Minimise parallax and card animations."
-              checked={draft.reduceMotion}
-              onCheckedChange={(reduceMotion) => setDraft((current) => ({ ...current, reduceMotion }))}
             />
             <SaveRow
               saving={saving}
@@ -520,11 +500,8 @@ function SettingsPage() {
               onSave={() =>
                 savePreferences({
                   theme: draft.theme,
-                  language: draft.language,
                   sidebar: draft.sidebar,
-                  density: draft.density,
                   accent: draft.accent,
-                  reduceMotion: draft.reduceMotion,
                 })
               }
             />
