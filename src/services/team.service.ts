@@ -51,7 +51,10 @@ export async function inviteToWorkspace(input: {
   email: string;
   role: TeamRole | string;
 }) {
-  return apiPost<{ invitation: TeamInvitation }>("/api/team/invite", input);
+  return apiPost<{ invitation: TeamInvitation; message?: string; warning?: string }>(
+    "/api/team/invite",
+    input,
+  );
 }
 
 export async function listInvitations(workspaceId: number) {

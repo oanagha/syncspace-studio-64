@@ -76,6 +76,10 @@ function TeamPage() {
   const { activeWorkspace, fetchWorkspaces, switchWorkspace } = useWorkspace();
   const [emails, setEmails] = useState("");
   const [pendingRemove, setPendingRemove] = useState<{ userId: number; name: string } | null>(null);
+  const [acceptedInviteIds, setAcceptedInviteIds] = useState<number[]>([]);
+  const [recentAccepts, setRecentAccepts] = useState<
+    { id: number; workspace_name: string; role: string }[]
+  >([]);
   const workspaceName = activeWorkspace?.name || "this workspace";
   const [role, setRole] = useState("Member");
   const currentUser = getUser();
@@ -127,7 +131,16 @@ function TeamPage() {
     },
     onSuccess: (results) => {
       setEmails("");
-      toast.success(`${results.length} invite${results.length > 1 ? "s" : ""} sent as ${role}`);
+      const warnings = results.filter((item) => item.warning);
+      if (warnings.length > 0) {
+        toast.warning(
+          `${results.length} invite${results.length > 1 ? "s" : ""} saved as ${role}, but email delivery failed for ${warnings.length}.`,
+        );
+      } else {
+        toast.success(
+          `${results.length} invite email${results.length > 1 ? "s" : ""} sent as ${role}`,
+        );
+      }
       invalidateTeam();
     },
     onError: (err) => {
@@ -180,15 +193,53 @@ function TeamPage() {
 
   const acceptInviteMutation = useMutation({
     mutationFn: (invitationId: number) => acceptInvitation(invitationId),
-    onSuccess: async (data) => {
-      toast.success(`Joined ${data.workspace.name}`);
-      invalidateTeam();
+    onSuccess: async (data, invitationId) => {
+      const inviteMeta =
+        myInvites.find((item) => item.id === invitationId) ||
+        pending.find((item) => item.id === invitationId);
+
+      setAcceptedInviteIds((current) =>
+        current.includes(invitationId) ? current : [...current, invitationId],
+      );
+      setRecentAccepts((current) => [
+        {
+          id: invitationId,
+          workspace_name: data.workspace.name,
+          role: data.workspace.role || inviteMeta?.role || "Member",
+        },
+        ...current.filter((item) => item.id !== invitationId),
+      ]);
+
+      // Drop from "invitations for you" immediately; keep pending row briefly as Accepted.
+      queryClient.setQueryData<{ invitations: typeof myInvites }>(myInvitationsQueryKey(), (current) => ({
+        invitations: (current?.invitations ?? []).filter((item) => item.id !== invitationId),
+      }));
+
+      toast.success(`Joined ${data.workspace.name} — you're now a member`);
+
+      const joinedWorkspaceId = data.workspace.id;
       try {
         await fetchWorkspaces();
-        await switchWorkspace(data.workspace.id);
+        await switchWorkspace(joinedWorkspaceId);
       } catch {
         // Workspace list refresh is enough if switch fails.
       }
+
+      invalidateTeam();
+      void queryClient.invalidateQueries({ queryKey: teamMembersQueryKey(joinedWorkspaceId) });
+      void queryClient.invalidateQueries({ queryKey: invitationQueryKey(joinedWorkspaceId) });
+      void queryClient.invalidateQueries({ queryKey: myInvitationsQueryKey() });
+
+      // After members refresh, clear the accepted pending chip.
+      window.setTimeout(() => {
+        setAcceptedInviteIds((current) => current.filter((id) => id !== invitationId));
+        queryClient.setQueryData<{ invitations: typeof pending }>(
+          invitationQueryKey(joinedWorkspaceId),
+          (current) => ({
+            invitations: (current?.invitations ?? []).filter((item) => item.id !== invitationId),
+          }),
+        );
+      }, 1600);
     },
     onError: (err) => {
       toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to accept invite.");
@@ -241,10 +292,27 @@ function TeamPage() {
         </Button>
       </header>
 
-      {myInvites.length > 0 && (
+      {(myInvites.length > 0 || recentAccepts.length > 0) && (
         <section className="surface-card space-y-3 p-6">
           <h2 className="text-lg font-bold">Invitations for you</h2>
           <p className="text-sm text-muted-foreground">Accept to join these workspaces.</p>
+          {recentAccepts.map((invite) => (
+            <div
+              key={`accepted-${invite.id}`}
+              className="flex flex-wrap items-center gap-3 rounded-2xl border border-success/30 bg-success/5 px-4 py-2.5"
+            >
+              <span className="grid size-8 place-items-center rounded-xl bg-success/15 text-xs font-bold text-success">
+                {invite.workspace_name[0]?.toUpperCase()}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">{invite.workspace_name}</p>
+                <p className="truncate text-xs text-muted-foreground">Now a {invite.role}</p>
+              </div>
+              <span className="rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-bold text-success">
+                Accepted
+              </span>
+            </div>
+          ))}
           {myInvites.map((invite) => (
             <div
               key={invite.id}
@@ -266,7 +334,9 @@ function TeamPage() {
                 onClick={() => acceptInviteMutation.mutate(invite.id)}
               >
                 <Check className="size-3.5" />
-                {acceptInviteMutation.isPending ? "Joining…" : "Accept"}
+                {acceptInviteMutation.isPending && acceptInviteMutation.variables === invite.id
+                  ? "Joining…"
+                  : "Accept"}
               </Button>
             </div>
           ))}
@@ -317,6 +387,7 @@ function TeamPage() {
             </p>
             {pending.map((p) => {
               const isMine = currentEmail && p.email.toLowerCase() === currentEmail;
+              const justAccepted = acceptedInviteIds.includes(p.id);
               return (
                 <div
                   key={p.id}
@@ -329,7 +400,11 @@ function TeamPage() {
                   <span className="hidden rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground sm:inline">
                     {p.role}
                   </span>
-                  {isMine ? (
+                  {justAccepted ? (
+                    <span className="rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-bold text-success">
+                      Accepted
+                    </span>
+                  ) : isMine ? (
                     <Button
                       variant="hero"
                       size="sm"
@@ -339,7 +414,7 @@ function TeamPage() {
                       Accept
                     </Button>
                   ) : null}
-                  {canManage ? (
+                  {canManage && !justAccepted ? (
                     <Button
                       variant="ghost"
                       size="icon-sm"

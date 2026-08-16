@@ -9,7 +9,18 @@ import { Label } from "@/components/ui/label";
 import { apiPost } from "@/lib/api";
 import { saveAuth, type LoginResponse } from "@/lib/auth";
 
+type SignInSearch = {
+  next?: string;
+};
+
 export const Route = createFileRoute("/signin")({
+  validateSearch: (search: Record<string, unknown>): SignInSearch => {
+    const next = search["next"];
+    if (typeof next === "string" && next.startsWith("/")) {
+      return { next };
+    }
+    return {};
+  },
   head: () => ({
     meta: [
       { title: "Sign in to SyncSpace — Real-time team workspace" },
@@ -23,6 +34,7 @@ export const Route = createFileRoute("/signin")({
 
 function SignIn() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const [show, setShow] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,7 +63,19 @@ function SignIn() {
 
       saveAuth(data.token, data.user);
       toast.success(`Welcome back, ${data.user.name}!`);
-      navigate({ to: "/app" });
+
+      // Prefer typed invite navigation so we stay in-app after sign-in.
+      const inviteMatch = next?.match(/^\/invite\/([^/?#]+)/);
+      if (inviteMatch?.[1]) {
+        void navigate({
+          to: "/invite/$inviteId",
+          params: { inviteId: inviteMatch[1] },
+        });
+      } else if (next?.startsWith("/")) {
+        window.location.assign(next);
+      } else {
+        void navigate({ to: "/app" });
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign in failed. Please try again.");
     } finally {

@@ -188,8 +188,8 @@ export function EditTaskModal({ task: initialTask, open, onOpenChange }: EditTas
         onOpenChange(next);
       }}
     >
-      <DialogContent className="rounded-3xl sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[min(90dvh,820px)] w-[calc(100%-1.5rem)] flex-col gap-0 overflow-hidden rounded-3xl p-0 sm:max-w-xl">
+        <DialogHeader className="shrink-0 space-y-0 border-b border-border/70 px-6 pb-4 pt-6 text-left">
           <div className="flex items-start justify-between gap-3 pr-8">
             <div className="space-y-1.5">
               <DialogTitle>Edit task</DialogTitle>
@@ -201,6 +201,7 @@ export function EditTaskModal({ task: initialTask, open, onOpenChange }: EditTas
               type="button"
               variant={watching ? "secondary" : "outline"}
               size="sm"
+              className="shrink-0"
               disabled={!task || watchMutation.isPending}
               onClick={() => watchMutation.mutate()}
             >
@@ -215,108 +216,112 @@ export function EditTaskModal({ task: initialTask, open, onOpenChange }: EditTas
             </Button>
           </div>
         </DialogHeader>
-        {taskQuery.isFetching && !taskQuery.data && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            Loading task...
-          </div>
-        )}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="edit-task-title">Title</Label>
-            <Input
-              id="edit-task-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  submit();
-                }
-              }}
-              placeholder="Write the homepage hero copy"
-              maxLength={200}
-              className="h-11 rounded-2xl"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit-task-description">Description</Label>
-            <Textarea
-              id="edit-task-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              placeholder="What needs to be done?"
-              className="rounded-2xl"
-            />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Column</Label>
-              <Select value={column} onValueChange={setColumn}>
-                <SelectTrigger className="h-11 rounded-2xl">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {columns.map((item) => (
-                    <SelectItem key={item.id} value={columnTitle(item)}>
-                      {columnTitle(item)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
+          {taskQuery.isFetching && !taskQuery.data && (
+            <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              Loading task...
             </div>
+          )}
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Priority</Label>
-              <Select value={priority} onValueChange={setPriority}>
-                <SelectTrigger className="h-11 rounded-2xl">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TASK_PRIORITIES.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {value}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Assignee</Label>
-              <Select value={assigneeId} onValueChange={setAssigneeId}>
-                <SelectTrigger className="h-11 rounded-2xl">
-                  <SelectValue placeholder="Unassigned" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Unassigned</SelectItem>
-                  {assigneeOptions.map((member) => (
-                    <SelectItem key={member.id} value={String(member.id)}>
-                      {member.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-task-due">Due date</Label>
+              <Label htmlFor="edit-task-title">Title</Label>
               <Input
-                id="edit-task-due"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                id="edit-task-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    submit();
+                  }
+                }}
+                placeholder="Write the homepage hero copy"
+                maxLength={200}
                 className="h-11 rounded-2xl"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-task-description">Description</Label>
+              <Textarea
+                id="edit-task-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                placeholder="What needs to be done?"
+                className="rounded-2xl"
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Column</Label>
+                <Select value={column} onValueChange={setColumn}>
+                  <SelectTrigger className="h-11 rounded-2xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper" className="z-[60]">
+                    {columns.map((item) => (
+                      <SelectItem key={item.id} value={columnTitle(item)}>
+                        {columnTitle(item)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Priority</Label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger className="h-11 rounded-2xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper" className="z-[60]">
+                    {TASK_PRIORITIES.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Assignee</Label>
+                <Select value={assigneeId} onValueChange={setAssigneeId}>
+                  <SelectTrigger className="h-11 rounded-2xl">
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" className="z-[60]">
+                    <SelectItem value="none">Unassigned</SelectItem>
+                    {assigneeOptions.map((member) => (
+                      <SelectItem key={member.id} value={String(member.id)}>
+                        {member.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-task-due">Due date</Label>
+                <Input
+                  id="edit-task-due"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="h-11 rounded-2xl"
+                />
+              </div>
+            </div>
+            {task?.id ? <TaskSubtasks taskId={task.id} projectId={task.project_id} /> : null}
+            {task?.id ? (
+              <TaskAttachments taskId={task.id} projectId={task.project_id} />
+            ) : null}
+            {task?.id ? <TaskComments taskId={task.id} /> : null}
           </div>
-          {task?.id ? <TaskSubtasks taskId={task.id} projectId={task.project_id} /> : null}
-          {task?.id ? (
-            <TaskAttachments taskId={task.id} projectId={task.project_id} />
-          ) : null}
-          {task?.id ? <TaskComments taskId={task.id} /> : null}
         </div>
-        <DialogFooter className="gap-2 sm:justify-between">
+
+        <DialogFooter className="shrink-0 gap-2 border-t border-border/70 bg-muted/25 px-6 py-4 sm:justify-between">
           <Button
             variant="ghost"
             className="text-destructive hover:text-destructive"

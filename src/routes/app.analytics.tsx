@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -21,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Counter, ProgressRing } from "@/components/ux/motion";
 import { cn } from "@/lib/utils";
 import { ApiRequestError } from "@/lib/api";
+import { exportAnalyticsPdf } from "@/lib/export-analytics-pdf";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import {
   analyticsQueryKey,
@@ -48,6 +50,7 @@ export const Route = createFileRoute("/app/analytics")({
 function AnalyticsPage() {
   const { activeWorkspace, loading: workspaceLoading } = useWorkspace();
   const [range, setRange] = useState<AnalyticsRange>("30d");
+  const [exporting, setExporting] = useState(false);
   const workspaceId = activeWorkspace?.id ?? null;
   const workspaceName = activeWorkspace?.name || "Workspace";
 
@@ -296,17 +299,33 @@ function AnalyticsPage() {
 
       <section className="surface-card flex flex-wrap items-center justify-between gap-4 p-6">
         <div>
-          <h2 className="text-lg font-bold">Weekly digest</h2>
+          <h2 className="text-lg font-bold">Export report</h2>
           <p className="text-sm text-muted-foreground">
-            Export this report as PDF or schedule it every Monday at 9:00.
+            Download a PDF of the current analytics range via your browser’s print dialog.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => toast.success("Report exported as PDF")}>
-            Export PDF
-          </Button>
-          <Button variant="hero" onClick={() => toast.success("Weekly digest scheduled for Mondays 9am")}>
-            Schedule digest
+          <Button
+            variant="hero"
+            disabled={exporting}
+            onClick={() => {
+              try {
+                setExporting(true);
+                exportAnalyticsPdf({
+                  workspaceName,
+                  range,
+                  data,
+                });
+                toast.success("Print dialog opened — choose Save as PDF");
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : "Failed to export PDF.");
+              } finally {
+                setExporting(false);
+              }
+            }}
+          >
+            {exporting ? <Loader2 className="size-4 animate-spin" /> : null}
+            {exporting ? "Preparing…" : "Export PDF"}
           </Button>
         </div>
       </section>

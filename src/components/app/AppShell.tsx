@@ -14,18 +14,10 @@ import {
   Users,
   UserPlus,
   CloudUpload,
-  Keyboard,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,20 +66,11 @@ const nav = [
   { to: "/app/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
 
-const shortcuts = [
-  ["⌘ K", "Open command palette"],
-  ["⌘ B", "Toggle sidebar"],
-  ["G then P", "Go to projects"],
-  ["G then A", "Go to analytics"],
-  ["?", "Show this dialog"],
-];
-
 export function AppShell() {
   const { preferences, updatePreferences } = usePreferences();
   const [collapsed, setCollapsed] = useState(preferences.sidebar === "collapsed");
   const [cmdOpen, setCmdOpen] = useState(false);
   const [newWsOpen, setNewWsOpen] = useState(false);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const { activeWorkspace } = useWorkspace();
@@ -419,15 +402,6 @@ export function AppShell() {
                 <DropdownMenuItem asChild className="rounded-xl">
                   <Link to="/app/settings">Profile & settings</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="rounded-xl"
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    setShortcutsOpen(true);
-                  }}
-                >
-                  Keyboard shortcuts
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="rounded-xl"
@@ -502,16 +476,6 @@ export function AppShell() {
                 <CloudUpload className="size-4" /> Upload file
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="gap-2 rounded-xl"
-              onSelect={(e) => {
-                e.preventDefault();
-                setShortcutsOpen(true);
-              }}
-            >
-              <Keyboard className="size-4" /> Shortcuts
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )}
@@ -572,23 +536,6 @@ export function AppShell() {
       </CommandDialog>
 
       <CreateWorkspaceModal open={newWsOpen} onOpenChange={setNewWsOpen} />
-
-      <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
-        <DialogContent className="rounded-3xl sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Keyboard shortcuts</DialogTitle>
-            <DialogDescription>Move around SyncSpace without leaving the keyboard.</DialogDescription>
-          </DialogHeader>
-          <div className="divide-y divide-border">
-            {shortcuts.map(([key, label]) => (
-              <div key={key} className="flex items-center justify-between py-2.5 text-sm">
-                <span className="text-muted-foreground">{label}</span>
-                <span className="rounded-lg border border-border px-2 py-0.5 font-mono text-xs">{key}</span>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
