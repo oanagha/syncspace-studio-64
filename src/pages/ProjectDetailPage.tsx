@@ -1,17 +1,24 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, FolderKanban, ListTodo, Pencil, SquareKanban, Users } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Calendar, FolderKanban, ListTodo, Pencil, SquareKanban, Trash2, Users } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddTaskModal } from "@/components/projects/AddTaskModal";
 import { EditProjectModal } from "@/components/projects/EditProjectModal";
 import { EditTaskModal } from "@/components/projects/EditTaskModal";
 import { ProgressCircle } from "@/components/projects/ProgressCircle";
+import {
+  ConfirmDeleteDialog,
+  DeleteEntityName,
+} from "@/components/ux/ConfirmDeleteDialog";
 import { ApiRequestError } from "@/lib/api";
+import { useDeleteTask } from "@/hooks/useDeleteTask";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import {
   canEditProject,
+  deleteProject,
   formatProjectDeadline,
   formatProjectTimestamp,
   getProject,
@@ -21,7 +28,7 @@ import {
   projectDetailQueryKey,
   type Project,
 } from "@/services/project.service";
-import { listTasks, taskQueryKey, type ProjectTask } from "@/services/task.service";
+import { isTaskOverdue, listTasks, taskQueryKey, type ProjectTask } from "@/services/task.service";
 import { cn } from "@/lib/utils";
 
 type ProjectDetailPageProps = {
@@ -76,7 +83,12 @@ function MemberList({ project }: { project: Project }) {
 export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
+  const [deleteProjectOpen, setDeleteProjectOpen] = useState(false);
+  const [pendingTaskDelete, setPendingTaskDelete] = useState<ProjectTask | null>(null);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { activeWorkspace } = useWorkspace();
+  const deleteTask = useDeleteTask(projectId);
 
   const projectQuery = useQuery({
     queryKey: projectDetailQueryKey(projectId),
@@ -88,6 +100,25 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
     queryKey: taskQueryKey(projectId),
     queryFn: () => listTasks(projectId),
     enabled: Number.isInteger(projectId) && projectId > 0,
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: () => deleteProject(projectId),
+    onSuccess: async () => {
+      const title = projectQuery.data?.project.title ?? "Project";
+      queryClient.removeQueries({ queryKey: projectDetailQueryKey(projectId) });
+      queryClient.removeQueries({ queryKey: taskQueryKey(projectId) });
+      if (activeWorkspace?.id) {
+        await queryClient.invalidateQueries({ queryKey: ["projects", activeWorkspace.id] });
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ["projects"] });
+      }
+      toast.success(`Project “${title}” deleted`);
+      void navigate({ to: "/app/projects" });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to delete project.");
+    },
   });
 
   const project = projectQuery.data?.project;
@@ -174,9 +205,20 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
             </Link>
           </Button>
           {canEditProject(project.role) && (
-            <Button variant="outline" onClick={() => setEditOpen(true)}>
-              <Pencil /> Edit project
-            </Button>
+            <>
+              <Button variant="outline" onClick={() => setEditOpen(true)}>
+                <Pencil /> Edit project
+              </Button>
+              <Button
+                variant="outline"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                disabled={deleteProjectMutation.isPending}
+                onClick={() => setDeleteProjectOpen(true)}
+              >
+                <Trash2 />
+                {deleteProjectMutation.isPending ? "Deleting..." : "Delete"}
+              </Button>
+            </>
           )}
         </div>
       </header>
@@ -278,8 +320,13 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
                   {task.description?.trim() && (
                     <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{task.description}</p>
                   )}
-                  <p className="text-xs text-muted-foreground">
-                    Due {formatProjectDeadline(task.due_date)}
+                  <p
+                    className={cn(
+                      "text-xs",
+                      isTaskOverdue(task) ? "font-semibold text-destructive" : "text-muted-foreground",
+                    )}
+                  >
+                    {isTaskOverdue(task) ? "Overdue" : "Due"} {formatProjectDeadline(task.due_date)}
                   </p>
                 </div>
                 <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold text-muted-foreground">
@@ -288,6 +335,17 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
                 <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-bold text-primary">
                   {task.priority}
                 </span>
+                {task.assignee && (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span
+                      className="grid size-6 place-items-center rounded-full text-[9px] font-bold text-primary-foreground"
+                      style={{ background: memberAvatarColor(task.assignee.id) }}
+                    >
+                      {memberInitials(task.assignee.name)}
+                    </span>
+                    {task.assignee.name}
+                  </span>
+                )}
                 <Button
                   type="button"
                   variant="ghost"
@@ -297,6 +355,17 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
                   onClick={() => setEditingTask(task)}
                 >
                   <Pencil className="size-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Delete ${task.title}`}
+                  className="size-8 text-muted-foreground hover:text-destructive"
+                  disabled={deleteTask.isPending}
+                  onClick={() => setPendingTaskDelete(task)}
+                >
+                  <Trash2 className="size-3.5" />
                 </Button>
               </li>
             ))}
@@ -315,6 +384,48 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
       {canEditProject(project.role) && (
         <EditProjectModal project={project} open={editOpen} onOpenChange={setEditOpen} />
       )}
+
+      <ConfirmDeleteDialog
+        open={deleteProjectOpen}
+        onOpenChange={setDeleteProjectOpen}
+        title="Delete project?"
+        description={
+          <>
+            This permanently deletes <DeleteEntityName>{project.title}</DeleteEntityName>, including
+            its board, tasks, and related data. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete project"
+        pending={deleteProjectMutation.isPending}
+        onConfirm={() => {
+          deleteProjectMutation.mutate(undefined, {
+            onSuccess: () => setDeleteProjectOpen(false),
+          });
+        }}
+      />
+
+      <ConfirmDeleteDialog
+        open={Boolean(pendingTaskDelete)}
+        onOpenChange={(next) => {
+          if (!next) setPendingTaskDelete(null);
+        }}
+        title="Delete task?"
+        description={
+          <>
+            This will permanently remove{" "}
+            <DeleteEntityName>{pendingTaskDelete?.title ?? "this task"}</DeleteEntityName>. This
+            cannot be undone.
+          </>
+        }
+        confirmLabel="Delete task"
+        pending={deleteTask.isPending}
+        onConfirm={() => {
+          if (!pendingTaskDelete) return;
+          deleteTask.mutate(pendingTaskDelete.id, {
+            onSuccess: () => setPendingTaskDelete(null),
+          });
+        }}
+      />
     </div>
   );
 }

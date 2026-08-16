@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Check, ChevronsUpDown, Pencil, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,9 +11,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { canRenameWorkspace, workspaceInitials, type WorkspaceRole } from "@/services/workspace.service";
+import {
+  canDeleteWorkspace,
+  canRenameWorkspace,
+  workspaceInitials,
+  type WorkspaceRole,
+} from "@/services/workspace.service";
 import { cn } from "@/lib/utils";
 import { RenameWorkspaceModal } from "@/components/workspace/RenameWorkspaceModal";
+import {
+  ConfirmDeleteDialog,
+  DeleteEntityName,
+} from "@/components/ux/ConfirmDeleteDialog";
 
 type WorkspaceSwitcherProps = {
   collapsed?: boolean;
@@ -26,111 +36,164 @@ function roleBadgeVariant(role: WorkspaceRole) {
 }
 
 export function WorkspaceSwitcher({ collapsed, onCreateWorkspace }: WorkspaceSwitcherProps) {
-  const { workspaces, activeWorkspace, loading, switching, switchWorkspace } = useWorkspace();
+  const {
+    workspaces,
+    activeWorkspace,
+    loading,
+    switching,
+    deleting,
+    switchWorkspace,
+    deleteWorkspace,
+  } = useWorkspace();
   const [renameOpen, setRenameOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const initials = workspaceInitials(activeWorkspace?.name || "WS");
   const showRename = canRenameWorkspace(activeWorkspace?.role);
+  const showDelete = canDeleteWorkspace(activeWorkspace?.role);
+  const busy = loading || switching || deleting;
+
+  const runDelete = async () => {
+    if (!activeWorkspace || deleting) return;
+    const name = activeWorkspace.name;
+    try {
+      await deleteWorkspace(activeWorkspace.id);
+      setDeleteOpen(false);
+      toast.success(`Workspace “${name}” deleted`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete workspace.");
+    }
+  };
 
   return (
     <>
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          className={cn(
-            "flex w-full items-center gap-3 rounded-2xl border border-sidebar-border p-2.5 text-left transition-colors hover:bg-sidebar-accent",
-            collapsed && "justify-center",
-          )}
-          disabled={loading || switching}
-          aria-label="Switch workspace"
-        >
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl gradient-brand text-xs font-bold text-primary-foreground">
-            {initials}
-          </span>
-          {!collapsed && (
-            <>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-bold">
-                  {loading && !activeWorkspace ? "Loading…" : activeWorkspace?.name || "No workspace"}
-                </span>
-                {activeWorkspace?.role && (
-                  <span className="mt-0.5 inline-flex">
-                    <Badge
-                      variant={roleBadgeVariant(activeWorkspace.role)}
-                      className="h-5 rounded-md px-1.5 text-[10px] uppercase tracking-wide"
-                    >
-                      {activeWorkspace.role}
-                    </Badge>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className={cn(
+              "flex w-full items-center gap-3 rounded-2xl border border-sidebar-border p-2.5 text-left transition-colors hover:bg-sidebar-accent",
+              collapsed && "justify-center",
+            )}
+            disabled={busy}
+            aria-label="Switch workspace"
+          >
+            <span className="grid size-9 shrink-0 place-items-center rounded-xl gradient-brand text-xs font-bold text-primary-foreground">
+              {initials}
+            </span>
+            {!collapsed && (
+              <>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold">
+                    {loading && !activeWorkspace
+                      ? "Loading…"
+                      : activeWorkspace?.name || "No workspace"}
                   </span>
-                )}
-              </span>
-              <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
-            </>
+                  {activeWorkspace?.role && (
+                    <span className="mt-0.5 inline-flex">
+                      <Badge
+                        variant={roleBadgeVariant(activeWorkspace.role)}
+                        className="h-5 rounded-md px-1.5 text-[10px] uppercase tracking-wide"
+                      >
+                        {activeWorkspace.role}
+                      </Badge>
+                    </span>
+                  )}
+                </span>
+                <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
+              </>
+            )}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          className="w-72 rounded-2xl p-1.5 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95"
+        >
+          <DropdownMenuLabel>Switch workspace</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {workspaces.length === 0 && (
+            <p className="px-2 py-3 text-xs text-muted-foreground">No workspaces yet.</p>
           )}
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="start"
-        className="w-72 rounded-2xl p-1.5 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95"
-      >
-        <DropdownMenuLabel>Switch workspace</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {workspaces.length === 0 && (
-          <p className="px-2 py-3 text-xs text-muted-foreground">No workspaces yet.</p>
-        )}
-        {workspaces.map((workspace) => {
-          const active = workspace.id === activeWorkspace?.id;
-          return (
+          {workspaces.map((workspace) => {
+            const active = workspace.id === activeWorkspace?.id;
+            return (
+              <DropdownMenuItem
+                key={workspace.id}
+                onClick={() => {
+                  if (!active) void switchWorkspace(workspace.id);
+                }}
+                className={cn("gap-3 rounded-xl", active && "bg-primary-soft text-foreground")}
+              >
+                <span className="grid size-7 place-items-center rounded-lg bg-primary-soft text-[10px] font-bold text-primary">
+                  {workspaceInitials(workspace.name)}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">{workspace.name}</span>
+                  <Badge
+                    variant={roleBadgeVariant(workspace.role)}
+                    className="mt-0.5 h-4 rounded px-1 text-[9px] uppercase tracking-wide"
+                  >
+                    {workspace.role}
+                  </Badge>
+                </span>
+                {active && <Check className="size-4 text-primary" />}
+              </DropdownMenuItem>
+            );
+          })}
+          <DropdownMenuSeparator />
+          {showRename && (
             <DropdownMenuItem
-              key={workspace.id}
-              onClick={() => {
-                if (!active) void switchWorkspace(workspace.id);
+              className="gap-2 rounded-xl"
+              disabled={busy}
+              onSelect={(e) => {
+                e.preventDefault();
+                setRenameOpen(true);
               }}
-              className={cn(
-                "gap-3 rounded-xl",
-                active && "bg-primary-soft text-foreground",
-              )}
             >
-              <span className="grid size-7 place-items-center rounded-lg bg-primary-soft text-[10px] font-bold text-primary">
-                {workspaceInitials(workspace.name)}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate">{workspace.name}</span>
-                <Badge
-                  variant={roleBadgeVariant(workspace.role)}
-                  className="mt-0.5 h-4 rounded px-1 text-[9px] uppercase tracking-wide"
-                >
-                  {workspace.role}
-                </Badge>
-              </span>
-              {active && <Check className="size-4 text-primary" />}
+              <Pencil className="size-4" /> Rename workspace
             </DropdownMenuItem>
-          );
-        })}
-        <DropdownMenuSeparator />
-        {showRename && (
+          )}
+          {showDelete && (
+            <DropdownMenuItem
+              className="gap-2 rounded-xl text-destructive focus:text-destructive"
+              disabled={busy}
+              onSelect={(e) => {
+                e.preventDefault();
+                setDeleteOpen(true);
+              }}
+            >
+              <Trash2 className="size-4" />
+              {deleting ? "Deleting…" : "Delete workspace"}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             className="gap-2 rounded-xl"
+            disabled={busy}
             onSelect={(e) => {
               e.preventDefault();
-              setRenameOpen(true);
+              onCreateWorkspace();
             }}
           >
-            <Pencil className="size-4" /> Rename workspace
+            <Plus className="size-4" /> Create new workspace
           </DropdownMenuItem>
-        )}
-        <DropdownMenuItem
-          className="gap-2 rounded-xl"
-          onSelect={(e) => {
-            e.preventDefault();
-            onCreateWorkspace();
-          }}
-        >
-          <Plus className="size-4" /> Create new workspace
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-    <RenameWorkspaceModal open={renameOpen} onOpenChange={setRenameOpen} />
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <RenameWorkspaceModal open={renameOpen} onOpenChange={setRenameOpen} />
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete workspace?"
+        description={
+          <>
+            This permanently removes <DeleteEntityName>{activeWorkspace?.name ?? "this workspace"}</DeleteEntityName>{" "}
+            and all of its projects, tasks, files, and team data. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete workspace"
+        pending={deleting}
+        onConfirm={() => {
+          void runDelete();
+        }}
+      />
     </>
   );
 }

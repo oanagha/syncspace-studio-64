@@ -2,9 +2,13 @@ import { createContext, useCallback, useEffect, useMemo, useState, type ReactNod
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getStoredActiveWorkspace, saveActiveWorkspace } from "@/lib/auth";
-import { refetchWorkspaceScopedData } from "@/services/workspace-data.service";
+import {
+  clearDeletedWorkspaceData,
+  refetchWorkspaceScopedData,
+} from "@/services/workspace-data.service";
 import {
   createWorkspace as createWorkspaceRequest,
+  deleteWorkspace as deleteWorkspaceRequest,
   listWorkspaces,
   renameWorkspace as renameWorkspaceRequest,
   switchWorkspace as switchWorkspaceRequest,
@@ -16,10 +20,12 @@ type WorkspaceContextValue = {
   activeWorkspace: Workspace | null;
   loading: boolean;
   switching: boolean;
+  deleting: boolean;
   fetchWorkspaces: () => Promise<Workspace[]>;
   createWorkspace: (name: string) => Promise<Workspace>;
   switchWorkspace: (workspaceId: number) => Promise<void>;
   renameWorkspace: (workspaceId: number, name: string) => Promise<Workspace>;
+  deleteWorkspace: (workspaceId: number) => Promise<void>;
 };
 
 export const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -41,6 +47,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   });
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const applyActiveWorkspace = useCallback(
     async (workspace: Workspace | null, { refetch = true } = {}) => {
@@ -78,7 +85,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           id: active_workspace.id,
           name: active_workspace.name,
           role: active_workspace.role,
-          created_at: fromList?.created_at,
+          ...(fromList?.created_at ? { created_at: fromList.created_at } : {}),
         };
 
         setWorkspaces((prev) =>
@@ -114,17 +121,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setWorkspaces((prev) =>
         prev.map((item) =>
           item.id === workspace.id
-            ? { ...item, name: workspace.name, role: workspace.role, updated_at: workspace.updated_at }
+            ? {
+                ...item,
+                name: workspace.name,
+                role: workspace.role,
+                ...(workspace.updated_at ? { updated_at: workspace.updated_at } : {}),
+              }
             : item,
         ),
       );
 
       if (activeWorkspace?.id === workspace.id) {
-        const next = {
+        const next: Workspace = {
           ...activeWorkspace,
           name: workspace.name,
           role: workspace.role,
-          updated_at: workspace.updated_at,
+          ...(workspace.updated_at ? { updated_at: workspace.updated_at } : {}),
         };
         setActiveWorkspace(next);
         saveActiveWorkspace(next);
@@ -133,6 +145,36 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       return workspace;
     },
     [activeWorkspace],
+  );
+
+  const deleteWorkspace = useCallback(
+    async (workspaceId: number) => {
+      setDeleting(true);
+      try {
+        await deleteWorkspaceRequest(workspaceId);
+        await clearDeletedWorkspaceData(workspaceId, queryClient);
+
+        const { workspaces: list } = await listWorkspaces();
+        setWorkspaces(list);
+
+        if (activeWorkspace?.id === workspaceId) {
+          const next = list[0] ?? null;
+          if (next) {
+            try {
+              await switchWorkspaceRequest(next.id);
+            } catch {
+              // Still activate locally if switch fails for any reason.
+            }
+            await applyActiveWorkspace(next);
+          } else {
+            await applyActiveWorkspace(null, { refetch: false });
+          }
+        }
+      } finally {
+        setDeleting(false);
+      }
+    },
+    [activeWorkspace?.id, applyActiveWorkspace, queryClient],
   );
 
   useEffect(() => {
@@ -165,20 +207,24 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       activeWorkspace,
       loading,
       switching,
+      deleting,
       fetchWorkspaces,
       createWorkspace,
       switchWorkspace,
       renameWorkspace,
+      deleteWorkspace,
     }),
     [
       workspaces,
       activeWorkspace,
       loading,
       switching,
+      deleting,
       fetchWorkspaces,
       createWorkspace,
       switchWorkspace,
       renameWorkspace,
+      deleteWorkspace,
     ],
   );
 

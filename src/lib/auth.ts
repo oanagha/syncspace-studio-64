@@ -13,6 +13,7 @@ export type AuthUser = {
   id: number;
   name: string;
   email: string;
+  avatarUrl?: string | null;
 };
 
 export type RegisterResponse = {
@@ -52,6 +53,12 @@ export function getUser(): AuthUser | null {
   } catch {
     return null;
   }
+}
+
+export function updateStoredUser(patch: Partial<AuthUser>) {
+  const current = getUser();
+  if (!current) return;
+  localStorage.setItem(USER_KEY, JSON.stringify({ ...current, ...patch }));
 }
 
 export function clearAuth() {

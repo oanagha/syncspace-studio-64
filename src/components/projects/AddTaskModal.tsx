@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createTask, TASK_COLUMNS, TASK_PRIORITIES } from "@/services/task.service";
-import { projectDetailQueryKey } from "@/services/project.service";
+import { createTask, TASK_PRIORITIES, taskQueryKey, type ProjectTask } from "@/services/task.service";
+import { columnQueryKey, columnTitle, listColumns } from "@/services/column.service";
+import { getProject, projectDetailQueryKey } from "@/services/project.service";
+import { boardQueryKey, type BoardPayload } from "@/services/board.service";
 
 type AddTaskModalProps = {
   projectId: number;
@@ -52,6 +54,20 @@ export function AddTaskModal({
   const [column, setColumn] = useState(defaultColumn);
   const [priority, setPriority] = useState("Medium");
   const [dueDate, setDueDate] = useState("");
+  const [assigneeId, setAssigneeId] = useState("none");
+
+  const projectQuery = useQuery({
+    queryKey: projectDetailQueryKey(projectId),
+    queryFn: () => getProject(projectId),
+    enabled: Number.isInteger(projectId) && projectId > 0 && open,
+  });
+  const columnsQuery = useQuery({
+    queryKey: columnQueryKey(projectId),
+    queryFn: () => listColumns(projectId),
+    enabled: Number.isInteger(projectId) && projectId > 0 && open,
+  });
+  const members = projectQuery.data?.project.members ?? [];
+  const columns = columnsQuery.data?.columns ?? [];
 
   useEffect(() => {
     if (open) setColumn(defaultColumn);
@@ -63,22 +79,57 @@ export function AddTaskModal({
     setColumn(defaultColumn);
     setPriority("Medium");
     setDueDate("");
+    setAssigneeId("none");
   };
 
   const mutation = useMutation({
-    mutationFn: () =>
-      createTask(projectId, {
+    mutationFn: () => {
+      const payload: Parameters<typeof createTask>[0] = {
+        projectId,
         title: title.trim(),
         description: description.trim(),
-        column,
+        columnId: column,
+        assigneeId: assigneeId === "none" ? null : Number(assigneeId),
         priority,
-        due_date: dueDate || undefined,
-      }),
+      };
+      if (dueDate) payload.dueDate = dueDate;
+      return createTask(payload);
+    },
     onSuccess: (data) => {
-      toast.success(`Task “${data.task.title}” added`);
+      const task = data.task;
+
+      // Board keeps tasks in a disabled query seeded from getBoard — invalidate alone won't refetch.
+      queryClient.setQueryData<{ tasks: ProjectTask[] }>(taskQueryKey(projectId), (current) => {
+        const existing = current?.tasks ?? [];
+        if (existing.some((item) => item.id === task.id)) return { tasks: existing };
+        return { tasks: [...existing, task] };
+      });
+
+      queryClient.setQueryData<BoardPayload>(boardQueryKey(projectId), (current) => {
+        if (!current) return current;
+        if (current.tasks.some((item) => item.id === task.id)) return current;
+        const activity = current.activity
+          ? {
+              ...current.activity,
+              total_tasks: current.activity.total_tasks + 1,
+              in_progress_tasks:
+                task.column === "In Progress"
+                  ? current.activity.in_progress_tasks + 1
+                  : current.activity.in_progress_tasks,
+              completed_tasks:
+                task.column === "Done"
+                  ? current.activity.completed_tasks + 1
+                  : current.activity.completed_tasks,
+            }
+          : current.activity;
+        return { ...current, tasks: [...current.tasks, task], activity };
+      });
+
+      toast.success(`Task “${task.title}” added`);
       reset();
       setOpen(false);
-      void queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+      void queryClient.invalidateQueries({ queryKey: boardQueryKey(projectId) });
+      void queryClient.invalidateQueries({ queryKey: taskQueryKey(projectId) });
       void queryClient.invalidateQueries({ queryKey: projectDetailQueryKey(projectId) });
       void queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
@@ -158,9 +209,9 @@ export function AddTaskModal({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {TASK_COLUMNS.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {value}
+                  {columns.map((item) => (
+                    <SelectItem key={item.id} value={columnTitle(item)}>
+                      {columnTitle(item)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -182,15 +233,33 @@ export function AddTaskModal({
               </Select>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="task-due">Due date</Label>
-            <Input
-              id="task-due"
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="h-11 rounded-2xl"
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Assignee</Label>
+              <Select value={assigneeId} onValueChange={setAssigneeId}>
+                <SelectTrigger className="h-11 rounded-2xl">
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {members.map((member) => (
+                    <SelectItem key={member.id} value={String(member.id)}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="task-due">Due date</Label>
+              <Input
+                id="task-due"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="h-11 rounded-2xl"
+              />
+            </div>
           </div>
         </div>
         <DialogFooter>

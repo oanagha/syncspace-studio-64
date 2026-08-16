@@ -1,5 +1,6 @@
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Bell,
@@ -10,22 +11,13 @@ import {
   Plus,
   Search,
   Settings,
-  SquareKanban,
   Users,
   UserPlus,
   CloudUpload,
-  Keyboard,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,46 +35,172 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { members, notifications as seedNotifications, projects } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { clearAuth, getUser } from "@/lib/auth";
+import { clearAuth, getToken, getUser } from "@/lib/auth";
+import {
+  formatNotificationTime,
+  listNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  notificationQueryKey,
+  type AppNotification,
+  type NotificationsPayload,
+} from "@/services/notification.service";
+import { usePreferences } from "@/hooks/usePreferences";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { WorkspaceSwitcher } from "@/components/workspace/WorkspaceSwitcher";
 import { CreateWorkspaceModal } from "@/components/workspace/CreateWorkspaceModal";
 import { workspaceInitials } from "@/services/workspace.service";
+import { resolveAvatarUrl } from "@/services/settings.service";
+import { getTask } from "@/services/task.service";
+import { listProjects, memberAvatarColor, projectQueryKey } from "@/services/project.service";
+import { listMembers, teamMembersQueryKey } from "@/services/team.service";
+import { ApiRequestError } from "@/lib/api";
 
 const nav = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/app/projects", label: "Projects", icon: FolderKanban, exact: false },
-  { to: "/app/board", label: "Kanban board", icon: SquareKanban, exact: false },
   { to: "/app/team", label: "Team", icon: Users, exact: false },
   { to: "/app/files", label: "Files", icon: Files, exact: false },
   { to: "/app/analytics", label: "Analytics", icon: Gauge, exact: false },
   { to: "/app/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
 
-const shortcuts = [
-  ["⌘ K", "Open command palette"],
-  ["⌘ B", "Toggle sidebar"],
-  ["N", "New task on the board"],
-  ["G then P", "Go to projects"],
-  ["G then A", "Go to analytics"],
-  ["?", "Show this dialog"],
-];
-
 export function AppShell() {
-  const [collapsed, setCollapsed] = useState(false);
+  const { preferences, updatePreferences } = usePreferences();
+  const [collapsed, setCollapsed] = useState(preferences.sidebar === "collapsed");
   const [cmdOpen, setCmdOpen] = useState(false);
-  const [notes, setNotes] = useState(seedNotifications);
   const [newWsOpen, setNewWsOpen] = useState(false);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const { activeWorkspace } = useWorkspace();
   const user = getUser();
-  const userName = user?.name || "Account";
-  const userEmail = user?.email || "";
+  const userName = preferences.fullName || user?.name || "Account";
+  const userEmail = preferences.email || user?.email || "";
+  const avatarSrc = resolveAvatarUrl(preferences.avatarUrl ?? user?.avatarUrl ?? null);
+  const queryClient = useQueryClient();
+  const notificationsEnabled = preferences.notifications;
+  const notificationsQuery = useQuery({
+    queryKey: notificationQueryKey(),
+    queryFn: listNotifications,
+    enabled: Boolean(getToken()) && notificationsEnabled,
+    refetchOnWindowFocus: true,
+  });
+  const notes = notificationsQuery.data?.notifications ?? [];
+  const workspaceId = activeWorkspace?.id ?? null;
+
+  const paletteProjectsQuery = useQuery({
+    queryKey: projectQueryKey(workspaceId, "", "all", "recent"),
+    queryFn: () =>
+      listProjects({
+        workspaceId: workspaceId!,
+        search: "",
+        status: "all",
+        sort: "recent",
+      }),
+    enabled: Boolean(getToken()) && Number.isInteger(workspaceId) && (workspaceId ?? 0) > 0 && cmdOpen,
+  });
+
+  const paletteMembersQuery = useQuery({
+    queryKey: teamMembersQueryKey(workspaceId),
+    queryFn: () => listMembers(workspaceId!),
+    enabled: Boolean(getToken()) && Number.isInteger(workspaceId) && (workspaceId ?? 0) > 0 && cmdOpen,
+  });
+
+  const paletteProjects = paletteProjectsQuery.data?.projects ?? [];
+  const paletteMembers = paletteMembersQuery.data?.members ?? [];
+
+  const patchNotificationCache = useCallback(
+    (updater: (current: NotificationsPayload) => NotificationsPayload) => {
+      queryClient.setQueryData(notificationQueryKey(), (current: NotificationsPayload | undefined) => {
+        if (!current) return current;
+        return updater(current);
+      });
+    },
+    [queryClient],
+  );
+
+  const markOneMutation = useMutation({
+    mutationFn: (notification: AppNotification) => markNotificationRead(notification.id),
+    onSuccess: (data, notification) => {
+      patchNotificationCache((current) => {
+        const notifications = current.notifications.map((item) =>
+          item.id === notification.id
+            ? { ...item, unread: false, read_at: data.notification.read_at }
+            : item,
+        );
+        return {
+          notifications,
+          unread_count: notifications.filter((item) => item.unread).length,
+        };
+      });
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to mark as read.");
+    },
+  });
+
+  const markAllMutation = useMutation({
+    mutationFn: markAllNotificationsRead,
+    onSuccess: () => {
+      patchNotificationCache((current) => ({
+        unread_count: 0,
+        notifications: current.notifications.map((item) => ({
+          ...item,
+          unread: false,
+          read_at: item.read_at || new Date().toISOString(),
+        })),
+      }));
+      toast.success("All notifications marked as read");
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to mark all as read.");
+    },
+  });
+
+  const openNotification = async (notification: AppNotification) => {
+    if (notification.unread && markOneMutation.isPending) return;
+
+    try {
+      if (notification.unread) {
+        await markOneMutation.mutateAsync(notification);
+      }
+
+      let projectId = notification.project_id ?? null;
+      if (!projectId && notification.task_id) {
+        const { task } = await getTask(notification.task_id);
+        projectId = task.project_id;
+      }
+
+      if (projectId) {
+        navigate({
+          to: "/app/projects/$id/board",
+          params: { id: String(projectId) },
+        });
+      }
+    } catch (err) {
+      if (err instanceof ApiRequestError) return;
+      toast.error(err instanceof Error ? err.message : "Failed to open notification.");
+    }
+  };
   const userInitials = workspaceInitials(userName);
+
+  useEffect(() => {
+    setCollapsed(preferences.sidebar === "collapsed");
+  }, [preferences.sidebar]);
+
+  const setSidebarCollapsed = useCallback(
+    (next: boolean) => {
+      setCollapsed(next);
+      if ((next ? "collapsed" : "expanded") !== preferences.sidebar) {
+        void updatePreferences({ sidebar: next ? "collapsed" : "expanded" }).catch(() => {
+          setCollapsed(preferences.sidebar === "collapsed");
+          toast.error("Could not save sidebar preference.");
+        });
+      }
+    },
+    [preferences.sidebar, updatePreferences],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -92,14 +210,14 @@ export function AppShell() {
       }
       if (e.key.toLowerCase() === "b" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setCollapsed((v) => !v);
+        setSidebarCollapsed(!collapsed);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [collapsed, setSidebarCollapsed]);
 
-  const unread = notes.filter((n) => n.unread).length;
+  const unread = notificationsQuery.data?.unread_count ?? notes.filter((n) => n.unread).length;
   const isProjectDetail = /^\/app\/projects\/[^/]+/.test(pathname);
 
   const go = (to: string) => {
@@ -118,7 +236,7 @@ export function AppShell() {
         <div className={cn("flex h-16 items-center px-4", collapsed && "justify-center px-2")}>
           <button
             type="button"
-            onClick={() => setCollapsed((c) => !c)}
+            onClick={() => setSidebarCollapsed(!collapsed)}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             className="rounded-2xl transition-transform hover:scale-[1.03]"
@@ -205,37 +323,56 @@ export function AppShell() {
                   <p className="text-sm font-bold">Notifications</p>
                   <button
                     onClick={() => {
-                      setNotes((prev) => prev.map((n) => ({ ...n, unread: false })));
-                      toast.success("All notifications marked as read");
+                      if (markAllMutation.isPending || unread === 0) return;
+                      markAllMutation.mutate();
                     }}
-                    className="text-xs font-semibold text-primary hover:underline"
+                    className="text-xs font-semibold text-primary hover:underline disabled:opacity-50"
+                    disabled={unread === 0 || markAllMutation.isPending}
                   >
-                    Mark all read
+                    {markAllMutation.isPending ? "Marking…" : "Mark all read"}
                   </button>
                 </div>
                 <div className="max-h-[380px] overflow-y-auto border-t border-border">
-                  {notes.map((n, i) => (
-                    <button
-                      key={n.id}
-                      onClick={() =>
-                        setNotes((prev) => prev.map((x) => (x.id === n.id ? { ...x, unread: false } : x)))
-                      }
-                      className="flex w-full gap-3 border-b border-border px-4 py-3 text-left last:border-0 hover:bg-muted/50"
-                      style={{ animation: `slide-in-right .35s cubic-bezier(.22,1,.36,1) ${i * 60}ms both` }}
-                    >
-                      <span
-                        className={cn(
-                          "mt-1 size-2 shrink-0 rounded-full",
-                          n.unread ? "gradient-brand" : "bg-border",
-                        )}
-                      />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">{n.title}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>
-                        <p className="mt-1 text-[11px] text-muted-foreground">{n.time} ago</p>
-                      </div>
-                    </button>
-                  ))}
+                  {!notificationsEnabled ? (
+                    <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      Notifications are turned off in Settings.
+                    </p>
+                  ) : notificationsQuery.isLoading ? (
+                    <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      Loading notifications…
+                    </p>
+                  ) : notes.length === 0 ? (
+                    <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      No notifications yet. Mentions will show up here.
+                    </p>
+                  ) : (
+                    notes.map((n, i) => (
+                      <button
+                        key={n.id}
+                        type="button"
+                        onClick={() => {
+                          void openNotification(n);
+                        }}
+                        disabled={markOneMutation.isPending && markOneMutation.variables?.id === n.id}
+                        className="flex w-full gap-3 border-b border-border px-4 py-3 text-left last:border-0 hover:bg-muted/50 disabled:opacity-60"
+                        style={{ animation: `slide-in-right .35s cubic-bezier(.22,1,.36,1) ${i * 60}ms both` }}
+                      >
+                        <span
+                          className={cn(
+                            "mt-1 size-2 shrink-0 rounded-full",
+                            n.unread ? "gradient-brand" : "bg-border",
+                          )}
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold">{n.title}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            {formatNotificationTime(n.created_at)}
+                          </p>
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
               </PopoverContent>
             </Popover>
@@ -244,10 +381,14 @@ export function AppShell() {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 rounded-2xl p-1 pr-2 transition-colors hover:bg-muted">
                   <span
-                    className="grid size-8 place-items-center rounded-xl text-xs font-bold text-primary-foreground"
-                    style={{ background: members[0]!.color }}
+                    className="grid size-8 place-items-center overflow-hidden rounded-xl text-xs font-bold text-primary-foreground"
+                    style={{
+                      background: avatarSrc
+                        ? `center / cover url(${avatarSrc})`
+                        : memberAvatarColor(user?.id ?? 0),
+                    }}
                   >
-                    {userInitials}
+                    {!avatarSrc && userInitials}
                   </span>
                   <span className="hidden text-sm font-semibold sm:inline">{userName.split(" ")[0]}</span>
                 </button>
@@ -260,15 +401,6 @@ export function AppShell() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="rounded-xl">
                   <Link to="/app/settings">Profile & settings</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="rounded-xl"
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    setShortcutsOpen(true);
-                  }}
-                >
-                  Keyboard shortcuts
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -335,11 +467,6 @@ export function AppShell() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="gap-2 rounded-xl">
-              <Link to="/app/board">
-                <SquareKanban className="size-4" /> New task
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild className="gap-2 rounded-xl">
               <Link to="/app/team">
                 <UserPlus className="size-4" /> Invite teammate
               </Link>
@@ -348,16 +475,6 @@ export function AppShell() {
               <Link to="/app/files">
                 <CloudUpload className="size-4" /> Upload file
               </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="gap-2 rounded-xl"
-              onSelect={(e) => {
-                e.preventDefault();
-                setShortcutsOpen(true);
-              }}
-            >
-              <Keyboard className="size-4" /> Shortcuts
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -375,15 +492,29 @@ export function AppShell() {
             ))}
           </CommandGroup>
           <CommandGroup heading="Projects">
-            {projects.slice(0, 4).map((p) => (
-              <CommandItem key={p.id} value={p.name} onSelect={() => go("/app/projects")}>
-                {p.name}
+            {paletteProjects.slice(0, 6).map((p) => (
+              <CommandItem
+                key={p.id}
+                value={p.title}
+                onSelect={() => {
+                  setCmdOpen(false);
+                  navigate({ to: "/app/projects/$id", params: { id: String(p.id) } });
+                }}
+              >
+                {p.title}
               </CommandItem>
             ))}
           </CommandGroup>
           <CommandGroup heading="People">
-            {members.slice(0, 4).map((m) => (
-              <CommandItem key={m.id} value={m.name} onSelect={() => go("/app/team")}>
+            {paletteMembers.slice(0, 6).map((m) => (
+              <CommandItem
+                key={m.id}
+                value={m.name}
+                onSelect={() => {
+                  setCmdOpen(false);
+                  navigate({ to: "/app/team" });
+                }}
+              >
                 {m.name}
               </CommandItem>
             ))}
@@ -405,23 +536,6 @@ export function AppShell() {
       </CommandDialog>
 
       <CreateWorkspaceModal open={newWsOpen} onOpenChange={setNewWsOpen} />
-
-      <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
-        <DialogContent className="rounded-3xl sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Keyboard shortcuts</DialogTitle>
-            <DialogDescription>Move around SyncSpace without leaving the keyboard.</DialogDescription>
-          </DialogHeader>
-          <div className="divide-y divide-border">
-            {shortcuts.map(([key, label]) => (
-              <div key={key} className="flex items-center justify-between py-2.5 text-sm">
-                <span className="text-muted-foreground">{label}</span>
-                <span className="rounded-lg border border-border px-2 py-0.5 font-mono text-xs">{key}</span>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

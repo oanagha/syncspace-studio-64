@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-
 type ProgressCircleProps = {
   value: number;
   size?: number;
@@ -16,12 +14,6 @@ export function ProgressCircle({
   const clamped = Math.max(0, Math.min(100, Math.round(value)));
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setProgress(clamped), 80);
-    return () => window.clearTimeout(timeout);
-  }, [clamped]);
 
   return (
     <div className="relative grid place-items-center" style={{ width: size, height: size }}>
@@ -43,8 +35,7 @@ export function ProgressCircle({
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}
-          strokeDashoffset={circumference - (circumference * progress) / 100}
-          style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1)" }}
+          strokeDashoffset={circumference - (circumference * clamped) / 100}
         />
       </svg>
       <span className="absolute text-xs font-bold tabular-nums">{clamped}%</span>

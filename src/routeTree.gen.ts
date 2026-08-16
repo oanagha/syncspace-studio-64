@@ -26,6 +26,7 @@ import { Route as AppFilesRouteImport } from './routes/app.files'
 import { Route as AppProjectsRouteImport } from './routes/app.projects'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppTeamRouteImport } from './routes/app.team'
+import { Route as InviteInviteIdRouteImport } from './routes/invite.$inviteId'
 import { Route as AppProjectsIdRouteImport } from './routes/app.projects_.$id'
 import { Route as AppProjectsIdIndexRouteImport } from './routes/app.projects_.$id.index'
 import { Route as AppProjectsIdBoardRouteImport } from './routes/app.projects_.$id.board'
@@ -115,6 +116,11 @@ const AppTeamRoute = AppTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AppRoute,
 } as any)
+const InviteInviteIdRoute = InviteInviteIdRouteImport.update({
+  id: '/invite/$inviteId',
+  path: '/invite/$inviteId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppProjectsIdRoute = AppProjectsIdRouteImport.update({
   id: '/projects_/$id',
   path: '/projects/$id',
@@ -148,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/app/projects': typeof AppProjectsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/team': typeof AppTeamRoute
+  '/invite/$inviteId': typeof InviteInviteIdRoute
   '/app/': typeof AppIndexRoute
   '/app/projects/$id': typeof AppProjectsIdRouteWithChildren
   '/app/projects/$id/board': typeof AppProjectsIdBoardRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByTo {
   '/app/projects': typeof AppProjectsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/team': typeof AppTeamRoute
+  '/invite/$inviteId': typeof InviteInviteIdRoute
   '/app': typeof AppIndexRoute
   '/app/projects/$id/board': typeof AppProjectsIdBoardRoute
   '/app/projects/$id': typeof AppProjectsIdIndexRoute
@@ -191,6 +199,7 @@ export interface FileRoutesById {
   '/app/projects': typeof AppProjectsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/team': typeof AppTeamRoute
+  '/invite/$inviteId': typeof InviteInviteIdRoute
   '/app/': typeof AppIndexRoute
   '/app/projects_/$id': typeof AppProjectsIdRouteWithChildren
   '/app/projects_/$id/board': typeof AppProjectsIdBoardRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/app/projects'
     | '/app/settings'
     | '/app/team'
+    | '/invite/$inviteId'
     | '/app/'
     | '/app/projects/$id'
     | '/app/projects/$id/board'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/app/projects'
     | '/app/settings'
     | '/app/team'
+    | '/invite/$inviteId'
     | '/app'
     | '/app/projects/$id/board'
     | '/app/projects/$id'
@@ -257,6 +268,7 @@ export interface FileRouteTypes {
     | '/app/projects'
     | '/app/settings'
     | '/app/team'
+    | '/invite/$inviteId'
     | '/app/'
     | '/app/projects_/$id'
     | '/app/projects_/$id/board'
@@ -274,6 +286,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SigninRoute: typeof SigninRoute
   SignupRoute: typeof SignupRoute
+  InviteInviteIdRoute: typeof InviteInviteIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -397,6 +410,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTeamRouteImport
       parentRoute: typeof AppRoute
     }
+    '/invite/$inviteId': {
+      id: '/invite/$inviteId'
+      path: '/invite/$inviteId'
+      fullPath: '/invite/$inviteId'
+      preLoaderRoute: typeof InviteInviteIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/projects_/$id': {
       id: '/app/projects_/$id'
       path: '/projects/$id'
@@ -470,6 +490,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SigninRoute: SigninRoute,
   SignupRoute: SignupRoute,
+  InviteInviteIdRoute: InviteInviteIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -13,6 +13,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PlanCta } from "@/components/site/PlanCta";
 import {
   Accordion,
   AccordionContent,
@@ -344,9 +345,13 @@ function Landing() {
                         </li>
                       ))}
                     </ul>
-                    <Button asChild variant={p.popular ? "hero" : "outline"} className="mt-8">
-                      <Link to="/signup">{p.cta}</Link>
-                    </Button>
+                    <PlanCta
+                      name={p.name}
+                      price={p.price}
+                      cta={p.cta}
+                      variant={p.popular ? "hero" : "outline"}
+                      className="mt-8 w-full"
+                    />
                   </article>
                 </Reveal>
               ))}
