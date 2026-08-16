@@ -47,18 +47,54 @@ export const Route = createFileRoute("/")({
 });
 
 const features = [
-  { icon: Kanban, title: "Realtime boards", body: "Drag, drop and reorder with live cursors. Every teammate sees the same board in under 100ms." },
-  { icon: MessageSquare, title: "Threaded comments", body: "Discuss in context with mentions, reactions and resolved threads that never clutter the task." },
-  { icon: FileStack, title: "Shared files", body: "Drop 5 GB assets straight onto a task with instant previews and versioned history." },
-  { icon: BarChart3, title: "Deep analytics", body: "Cycle time, throughput and workload balance, computed continuously across every project." },
-  { icon: Users, title: "Guest client access", body: "Invite clients as comment-only guests scoped to a single project. No seats wasted." },
-  { icon: Lock, title: "Enterprise security", body: "SOC 2 Type II, SSO/SAML, granular roles, audit logs and regional data residency." },
+  {
+    icon: Kanban,
+    title: "Realtime boards",
+    body: "Drag, drop and reorder with live cursors. Every teammate sees the same board in under 100ms.",
+  },
+  {
+    icon: MessageSquare,
+    title: "Threaded comments",
+    body: "Discuss in context with mentions, reactions and resolved threads that never clutter the task.",
+  },
+  {
+    icon: FileStack,
+    title: "Shared files",
+    body: "Drop 5 GB assets straight onto a task with instant previews and versioned history.",
+  },
+  {
+    icon: BarChart3,
+    title: "Deep analytics",
+    body: "Cycle time, throughput and workload balance, computed continuously across every project.",
+  },
+  {
+    icon: Users,
+    title: "Guest client access",
+    body: "Invite clients as comment-only guests scoped to a single project. No seats wasted.",
+  },
+  {
+    icon: Lock,
+    title: "Enterprise security",
+    body: "SOC 2 Type II, SSO/SAML, granular roles, audit logs and regional data residency.",
+  },
 ];
 
 const steps = [
-  { n: "01", title: "Create your workspace", body: "Import from Notion, Linear or ClickUp in one click — history and assignees intact." },
-  { n: "02", title: "Invite your team", body: "Roles, permissions and guest access configured before your first standup." },
-  { n: "03", title: "Ship in real time", body: "Boards, docs and files stay in sync while analytics track the momentum." },
+  {
+    n: "01",
+    title: "Create your workspace",
+    body: "Import from Notion, Linear or ClickUp in one click — history and assignees intact.",
+  },
+  {
+    n: "02",
+    title: "Invite your team",
+    body: "Roles, permissions and guest access configured before your first standup.",
+  },
+  {
+    n: "03",
+    title: "Ship in real time",
+    body: "Boards, docs and files stay in sync while analytics track the momentum.",
+  },
 ];
 
 function Landing() {
@@ -88,14 +124,13 @@ function Landing() {
             </Reveal>
             <Reveal delay={80}>
               <h1 className="mx-auto mt-7 max-w-4xl text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
-                The workspace where your team{" "}
-                <span className="gradient-text">thinks together</span>
+                The workspace where your team <span className="gradient-text">thinks together</span>
               </h1>
             </Reveal>
             <Reveal delay={160}>
               <p className="mx-auto mt-6 max-w-2xl text-pretty text-base text-muted-foreground sm:text-lg">
-                Boards, documents, files and analytics in one sub-100ms realtime surface.
-                Built for teams, freelancers and startups that hate context switching.
+                Boards, documents, files and analytics in one sub-100ms realtime surface. Built for
+                teams, freelancers and startups that hate context switching.
               </p>
             </Reveal>
             <Reveal delay={240}>
@@ -149,7 +184,9 @@ function Landing() {
                                 <div className="mt-3 flex items-center gap-1.5">
                                   <span
                                     className="size-5 rounded-full"
-                                    style={{ background: members[(ci + i) % members.length]!.color }}
+                                    style={{
+                                      background: members[(ci + i) % members.length]!.color,
+                                    }}
                                   />
                                   <span
                                     className="h-1.5 w-10 rounded-full"
@@ -404,7 +441,12 @@ function Landing() {
                     Create your workspace <ArrowRight />
                   </Link>
                 </Button>
-                <Button asChild variant="ghost" size="lg" className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="lg"
+                  className="text-primary-foreground hover:bg-primary-foreground/10"
+                >
                   <Link to="/signin">Sign in</Link>
                 </Button>
               </div>

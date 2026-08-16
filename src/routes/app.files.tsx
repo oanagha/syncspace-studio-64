@@ -15,10 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ApiRequestError } from "@/lib/api";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import {
-  ConfirmDeleteDialog,
-  DeleteEntityName,
-} from "@/components/ux/ConfirmDeleteDialog";
+import { ConfirmDeleteDialog, DeleteEntityName } from "@/components/ux/ConfirmDeleteDialog";
 import {
   deleteFile,
   downloadWorkspaceFile,
@@ -73,7 +70,9 @@ function FilesPage() {
       void queryClient.invalidateQueries({ queryKey: filesQueryKey(workspaceId) });
     },
     onError: (err) => {
-      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Upload failed.");
+      toast.error(
+        err instanceof ApiRequestError || err instanceof Error ? err.message : "Upload failed.",
+      );
     },
   });
 
@@ -84,7 +83,9 @@ function FilesPage() {
       void queryClient.invalidateQueries({ queryKey: filesQueryKey(workspaceId) });
     },
     onError: (err) => {
-      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Delete failed.");
+      toast.error(
+        err instanceof ApiRequestError || err instanceof Error ? err.message : "Delete failed.",
+      );
     },
   });
 
@@ -147,7 +148,9 @@ function FilesPage() {
       <div className="surface-card mx-auto grid max-w-lg place-items-center gap-3 px-6 py-16 text-center">
         <h1 className="text-xl font-bold">Couldn’t load files</h1>
         <p className="text-sm text-muted-foreground">
-          {err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to process file"}
+          {err instanceof ApiRequestError || err instanceof Error
+            ? err.message
+            : "Failed to process file"}
         </p>
         <Button variant="outline" onClick={() => void filesQuery.refetch()}>
           Try again
@@ -255,13 +258,18 @@ function FilesPage() {
             <article
               key={f.id}
               className="surface-card hover-lift overflow-hidden"
-              style={{ animation: `fade-up .28s cubic-bezier(.22,1,.36,1) ${Math.min(i * 20, 100)}ms both` }}
+              style={{
+                animation: `fade-up .28s cubic-bezier(.22,1,.36,1) ${Math.min(i * 20, 100)}ms both`,
+              }}
             >
               <div
                 className="grid h-32 place-items-center"
                 style={{ background: `linear-gradient(135deg, ${f.color}22, ${f.color}08)` }}
               >
-                <span className="rounded-2xl bg-card px-3 py-1.5 text-xs font-bold" style={{ color: f.color }}>
+                <span
+                  className="rounded-2xl bg-card px-3 py-1.5 text-xs font-bold"
+                  style={{ color: f.color }}
+                >
                   {f.kind}
                 </span>
               </div>
@@ -311,7 +319,8 @@ function FilesPage() {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold">{f.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {formatBytes(f.size_bytes)} · {f.uploaded_by?.name || "Unknown"} · {formatFileDate(f.created_at)}
+                  {formatBytes(f.size_bytes)} · {f.uploaded_by?.name || "Unknown"} ·{" "}
+                  {formatFileDate(f.created_at)}
                   {f.project_title ? ` · ${f.project_title}` : ""}
                   {f.task_title ? ` · ${f.task_title}` : ""}
                 </p>
@@ -374,7 +383,12 @@ function FileMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={`More for ${file.name}`} disabled={deleting}>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`More for ${file.name}`}
+          disabled={deleting}
+        >
           <MoreHorizontal />
         </Button>
       </DropdownMenuTrigger>

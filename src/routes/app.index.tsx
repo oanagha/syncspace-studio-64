@@ -66,7 +66,11 @@ function Dashboard() {
     return (
       <EmptyState
         title="Couldn’t load dashboard"
-        message={err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to load analytics"}
+        message={
+          err instanceof ApiRequestError || err instanceof Error
+            ? err.message
+            : "Failed to load analytics"
+        }
       />
     );
   }
@@ -103,8 +107,8 @@ function Dashboard() {
             <span className="gradient-text">{systemLabel(score)}</span>
           </h1>
           <p className="text-base text-muted-foreground sm:text-lg">
-            {greetingForHour()}, {firstName}. {dueCount} task{dueCount === 1 ? "" : "s"} due today, {reviews}{" "}
-            review{reviews === 1 ? "" : "s"} waiting.
+            {greetingForHour()}, {firstName}. {dueCount} task{dueCount === 1 ? "" : "s"} due today,{" "}
+            {reviews} review{reviews === 1 ? "" : "s"} waiting.
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end">
@@ -115,7 +119,9 @@ function Dashboard() {
             <span className="font-[family-name:var(--font-display)] text-5xl text-primary sm:text-7xl">
               <Counter to={score} />
             </span>
-            <span className="font-[family-name:var(--font-display)] text-xl text-accent sm:text-2xl">%</span>
+            <span className="font-[family-name:var(--font-display)] text-xl text-accent sm:text-2xl">
+              %
+            </span>
           </div>
         </div>
       </header>
@@ -131,7 +137,9 @@ function Dashboard() {
                 <h2 className="heading-dot text-lg uppercase tracking-tight text-primary sm:text-xl">
                   System throughput
                 </h2>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-secondary/70">Last 7 days</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-secondary/70">
+                  Last 7 days
+                </p>
               </div>
               <div className="flex gap-5 text-[10px] font-bold uppercase tracking-widest">
                 <span className="flex items-center gap-2 text-secondary">
@@ -153,7 +161,13 @@ function Dashboard() {
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="day" tickLine={false} axisLine={false} fontSize={11} />
-                    <YAxis tickLine={false} axisLine={false} fontSize={11} width={26} allowDecimals={false} />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      fontSize={11}
+                      width={26}
+                      allowDecimals={false}
+                    />
                     <Tooltip
                       contentStyle={{
                         borderRadius: 14,
@@ -170,7 +184,13 @@ function Dashboard() {
                       strokeOpacity={0.35}
                       fill="none"
                     />
-                    <Area type="monotone" dataKey="completed" stroke="#2d8a9e" strokeWidth={4} fill="url(#ed1)" />
+                    <Area
+                      type="monotone"
+                      dataKey="completed"
+                      stroke="#2d8a9e"
+                      strokeWidth={4}
+                      fill="url(#ed1)"
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
@@ -190,7 +210,9 @@ function Dashboard() {
                       ? "bg-secondary text-secondary-foreground"
                       : "border border-accent/25 bg-card"
                 }`}
-                style={{ animation: `fade-up .28s cubic-bezier(.22,1,.36,1) ${Math.min(i * 25, 100)}ms both` }}
+                style={{
+                  animation: `fade-up .28s cubic-bezier(.22,1,.36,1) ${Math.min(i * 25, 100)}ms both`,
+                }}
               >
                 <p
                   className={`mb-1 text-[10px] font-bold uppercase tracking-[0.18em] ${
@@ -199,7 +221,9 @@ function Dashboard() {
                 >
                   {k.label}
                 </p>
-                <h3 className={`font-[family-name:var(--font-display)] text-2xl sm:text-3xl ${k.solid ? "" : "text-primary"}`}>
+                <h3
+                  className={`font-[family-name:var(--font-display)] text-2xl sm:text-3xl ${k.solid ? "" : "text-primary"}`}
+                >
                   <Counter to={k.value} suffix={k.suffix} decimals={k.decimals ?? 0} />
                 </h3>
               </div>
@@ -207,12 +231,18 @@ function Dashboard() {
           </div>
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-            <div className="space-y-4" style={{ animation: "fade-up .28s cubic-bezier(.22,1,.36,1) 90ms both" }}>
+            <div
+              className="space-y-4"
+              style={{ animation: "fade-up .28s cubic-bezier(.22,1,.36,1) 90ms both" }}
+            >
               <div className="flex items-center justify-between">
                 <h2 className="heading-dot text-base uppercase tracking-tight text-primary sm:text-lg">
                   Active projects
                 </h2>
-                <Link to="/app/projects" className="text-[10px] font-bold uppercase tracking-widest text-secondary hover:underline">
+                <Link
+                  to="/app/projects"
+                  className="text-[10px] font-bold uppercase tracking-widest text-secondary hover:underline"
+                >
                   View all
                 </Link>
               </div>
@@ -248,8 +278,13 @@ function Dashboard() {
               </div>
             </div>
 
-            <div className="space-y-4" style={{ animation: "fade-up .28s cubic-bezier(.22,1,.36,1) 100ms both" }}>
-              <h2 className="heading-dot text-base uppercase tracking-tight text-primary sm:text-lg">Team activity</h2>
+            <div
+              className="space-y-4"
+              style={{ animation: "fade-up .28s cubic-bezier(.22,1,.36,1) 100ms both" }}
+            >
+              <h2 className="heading-dot text-base uppercase tracking-tight text-primary sm:text-lg">
+                Team activity
+              </h2>
               <div className="space-y-4">
                 {hasActivity ? (
                   data.activity.slice(0, 5).map((a) => (
@@ -266,7 +301,9 @@ function Dashboard() {
                           <span className="text-muted-foreground">{a.action}</span>{" "}
                           <span className="font-semibold text-secondary">{a.target}</span>
                         </p>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{a.time}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          {a.time}
+                        </p>
                       </div>
                     </div>
                   ))
@@ -285,22 +322,35 @@ function Dashboard() {
             className="surface-card rounded-3xl p-6 sm:p-8"
             style={{ animation: "fade-up .28s cubic-bezier(.22,1,.36,1) 60ms both" }}
           >
-            <h2 className="heading-dot text-xs font-bold uppercase tracking-[0.2em] text-primary">Task distribution</h2>
+            <h2 className="heading-dot text-xs font-bold uppercase tracking-[0.2em] text-primary">
+              Task distribution
+            </h2>
             {donut.length > 0 ? (
               <>
                 <div className="relative mx-auto mt-6 h-44 w-44">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={donut} dataKey="value" innerRadius={62} outerRadius={78} paddingAngle={4} stroke="none">
+                      <Pie
+                        data={donut}
+                        dataKey="value"
+                        innerRadius={62}
+                        outerRadius={78}
+                        paddingAngle={4}
+                        stroke="none"
+                      >
                         {donut.map((d) => (
                           <Cell key={d.name} fill={d.color} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={{ borderRadius: 14, border: "1px solid var(--border)" }} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: 14, border: "1px solid var(--border)" }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="font-[family-name:var(--font-display)] text-3xl text-primary">{donut.length}</span>
+                    <span className="font-[family-name:var(--font-display)] text-3xl text-primary">
+                      {donut.length}
+                    </span>
                     <span className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
                       Core sectors
                     </span>
@@ -321,7 +371,9 @@ function Dashboard() {
                 </div>
               </>
             ) : (
-              <p className="mt-6 text-center text-sm text-muted-foreground">No tasks to chart yet.</p>
+              <p className="mt-6 text-center text-sm text-muted-foreground">
+                No tasks to chart yet.
+              </p>
             )}
           </section>
 
@@ -329,7 +381,9 @@ function Dashboard() {
             className="rounded-3xl bg-primary p-6 text-primary-foreground sm:p-8"
             style={{ animation: "fade-up .28s cubic-bezier(.22,1,.36,1) 80ms both" }}
           >
-            <h2 className="heading-dot text-xs font-bold uppercase tracking-[0.2em] text-accent">Due today</h2>
+            <h2 className="heading-dot text-xs font-bold uppercase tracking-[0.2em] text-accent">
+              Due today
+            </h2>
             <div className="space-y-6">
               {hasDue ? (
                 data.due_today.map((t, i) => (
@@ -340,7 +394,9 @@ function Dashboard() {
                   >
                     <div className="min-w-0">
                       <p className="truncate font-bold">{t.title}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-wider opacity-60">{t.assignee.name}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider opacity-60">
+                        {t.assignee.name}
+                      </p>
                     </div>
                     <span className="shrink-0 text-xs font-bold">{t.due}</span>
                   </div>
@@ -350,7 +406,9 @@ function Dashboard() {
               )}
             </div>
             <div className="mt-8 space-y-4 border-t border-primary-foreground/15 pt-6">
-              <h3 className="heading-dot text-xs font-bold uppercase tracking-[0.2em] text-accent">Deadlines</h3>
+              <h3 className="heading-dot text-xs font-bold uppercase tracking-[0.2em] text-accent">
+                Deadlines
+              </h3>
               {hasProjects ? (
                 data.project_health.slice(0, 3).map((p) => (
                   <div key={p.id} className="flex items-center justify-between gap-3 text-sm">
@@ -373,7 +431,9 @@ function Dashboard() {
 
 function ChartEmpty({ message }: { message: string }) {
   return (
-    <div className="grid h-full place-items-center text-center text-sm text-muted-foreground">{message}</div>
+    <div className="grid h-full place-items-center text-center text-sm text-muted-foreground">
+      {message}
+    </div>
   );
 }
 

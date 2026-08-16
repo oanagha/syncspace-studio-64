@@ -180,9 +180,11 @@
     color-mix(in oklab, var(--primary) 10%, white),
     color-mix(in oklab, var(--accent) 14%, white)
   );
-  --shadow-soft: 0 1px 2px oklch(0.28 0.055 250 / 0.05), 0 14px 32px -16px oklch(0.28 0.055 250 / 0.18);
+  --shadow-soft:
+    0 1px 2px oklch(0.28 0.055 250 / 0.05), 0 14px 32px -16px oklch(0.28 0.055 250 / 0.18);
   --shadow-lift: 0 26px 60px -26px oklch(0.32 0.07 250 / 0.42);
-  --shadow-glow: 0 0 0 1px color-mix(in oklab, var(--primary) 16%, transparent),
+  --shadow-glow:
+    0 0 0 1px color-mix(in oklab, var(--primary) 16%, transparent),
     0 18px 46px -20px color-mix(in oklab, var(--primary) 50%, transparent);
 }
 
@@ -292,7 +294,6 @@
   }
 }
 
-
 @utility glass {
   background: color-mix(in oklab, white 72%, transparent);
   backdrop-filter: blur(18px) saturate(160%);
@@ -327,7 +328,6 @@
     box-shadow: var(--shadow-lift);
   }
 }
-
 
 @utility mesh-bg {
   background:
@@ -370,6 +370,28 @@ html.reduce-motion *::after {
 
 html.reduce-motion .hover-lift:hover {
   transform: none;
+}
+
+html[data-accent="ocean"] .accent-swatch[data-accent-swatch="ocean"],
+html[data-accent="teal"] .accent-swatch[data-accent-swatch="teal"],
+html[data-accent="aqua"] .accent-swatch[data-accent-swatch="aqua"],
+html[data-accent="emerald"] .accent-swatch[data-accent-swatch="emerald"],
+html[data-accent="amber"] .accent-swatch[data-accent-swatch="amber"] {
+  box-shadow:
+    0 0 0 2px var(--card),
+    0 0 0 4px var(--swatch, currentColor);
+}
+
+html[data-accent="ocean"] .accent-swatch[data-accent-swatch="ocean"]::after,
+html[data-accent="teal"] .accent-swatch[data-accent-swatch="teal"]::after,
+html[data-accent="aqua"] .accent-swatch[data-accent-swatch="aqua"]::after,
+html[data-accent="emerald"] .accent-swatch[data-accent-swatch="emerald"]::after,
+html[data-accent="amber"] .accent-swatch[data-accent-swatch="amber"]::after {
+  content: "✓";
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
 }
 
 html[data-density="compact"] .surface-card {

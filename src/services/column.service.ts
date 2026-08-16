@@ -65,11 +65,7 @@ export async function deleteColumn(columnId: number, moveToColumnId?: number) {
   );
 }
 
-export function applyColumnReorder(
-  columns: BoardColumn[],
-  draggedId: number,
-  targetId: number,
-) {
+export function applyColumnReorder(columns: BoardColumn[], draggedId: number, targetId: number) {
   const ordered = [...columns].sort((a, b) => a.position - b.position || a.id - b.id);
   const from = ordered.findIndex((column) => column.id === draggedId);
   const to = ordered.findIndex((column) => column.id === targetId);

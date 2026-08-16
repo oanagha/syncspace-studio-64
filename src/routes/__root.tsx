@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { Toaster } from "../components/ui/sonner";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { appearanceBootScript } from "../lib/appearance-boot";
 
 function NotFoundComponent() {
   return (
@@ -109,8 +110,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="reduce-motion">
+    <html lang="en" className="reduce-motion" data-accent="ocean" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: appearanceBootScript }} />
         <HeadContent />
       </head>
       <body>

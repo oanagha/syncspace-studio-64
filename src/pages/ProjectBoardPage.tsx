@@ -61,7 +61,8 @@ export function ProjectBoardPage({ projectId }: ProjectBoardPageProps) {
   const error = projectQuery.error;
   const isForbidden = error instanceof ApiRequestError && error.status === 403;
   const isNotFound = error instanceof ApiRequestError && error.status === 404;
-  const statusStyle = PROJECT_STATUS_STYLES[project?.status ?? "On Track"] ?? PROJECT_STATUS_STYLES["On Track"]!;
+  const statusStyle =
+    PROJECT_STATUS_STYLES[project?.status ?? "On Track"] ?? PROJECT_STATUS_STYLES["On Track"]!;
 
   if (projectQuery.isLoading) {
     return (
@@ -136,8 +137,8 @@ export function ProjectBoardPage({ projectId }: ProjectBoardPageProps) {
             {project.description?.trim() || "No description yet."}
           </p>
           <p className="text-sm text-muted-foreground">
-            Due {formatProjectDeadline(project.deadline)} · {project.completed_tasks}/{project.total_tasks}{" "}
-            tasks
+            Due {formatProjectDeadline(project.deadline)} · {project.completed_tasks}/
+            {project.total_tasks} tasks
           </p>
         </div>
         <div className="flex items-center gap-3">

@@ -3,10 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Loader2, Paperclip, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  ConfirmDeleteDialog,
-  DeleteEntityName,
-} from "@/components/ux/ConfirmDeleteDialog";
+import { ConfirmDeleteDialog, DeleteEntityName } from "@/components/ux/ConfirmDeleteDialog";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { ApiRequestError } from "@/lib/api";
 import {

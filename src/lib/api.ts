@@ -61,9 +61,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const message =
       data && typeof data === "object"
-        ? ("message" in data && data.message) ||
-          ("error" in data && data.error) ||
-          "Request failed"
+        ? ("message" in data && data.message) || ("error" in data && data.error) || "Request failed"
         : response.statusText || "Request failed";
     throw new ApiRequestError(String(message), response.status);
   }

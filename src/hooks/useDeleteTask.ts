@@ -1,7 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { projectDetailQueryKey } from "@/services/project.service";
-import { deleteTask, taskDetailQueryKey, taskQueryKey, type ProjectTask } from "@/services/task.service";
+import {
+  deleteTask,
+  taskDetailQueryKey,
+  taskQueryKey,
+  type ProjectTask,
+} from "@/services/task.service";
 
 export function useDeleteTask(projectId: number, onDeleted?: () => void) {
   const queryClient = useQueryClient();

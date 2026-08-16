@@ -23,11 +23,7 @@ type TaskSubtasksProps = {
   projectId?: number;
 };
 
-function applySubtaskCounts(
-  task: ProjectTask,
-  done: number,
-  total: number,
-): ProjectTask {
+function applySubtaskCounts(task: ProjectTask, done: number, total: number): ProjectTask {
   return { ...task, subtasks_done: done, subtasks_total: total };
 }
 
@@ -124,7 +120,8 @@ export function TaskSubtasks({ taskId, projectId }: TaskSubtasksProps) {
     enabled: Number.isInteger(taskId) && taskId > 0,
   });
   const subtasks = subtasksQuery.data?.subtasks ?? [];
-  const done = subtasksQuery.data?.subtasks_done ?? subtasks.filter((item) => item.completed).length;
+  const done =
+    subtasksQuery.data?.subtasks_done ?? subtasks.filter((item) => item.completed).length;
   const total = subtasksQuery.data?.subtasks_total ?? subtasks.length;
   const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
@@ -296,8 +293,17 @@ export function TaskSubtasks({ taskId, projectId }: TaskSubtasksProps) {
           maxLength={200}
           className="h-10 rounded-2xl"
         />
-        <Button type="button" variant="outline" onClick={submit} disabled={createMutation.isPending}>
-          {createMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={submit}
+          disabled={createMutation.isPending}
+        >
+          {createMutation.isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Plus className="size-4" />
+          )}
           Add
         </Button>
       </div>

@@ -93,7 +93,10 @@ export function analyticsQueryKey(workspaceId: number | null | undefined, range:
   return ["analytics", workspaceId ?? null, range] as const;
 }
 
-export async function getAnalyticsDashboard(workspaceId: number, range: AnalyticsRange | string = "7d") {
+export async function getAnalyticsDashboard(
+  workspaceId: number,
+  range: AnalyticsRange | string = "7d",
+) {
   const params = new URLSearchParams({
     workspaceId: String(workspaceId),
     range: String(range),
@@ -123,5 +126,10 @@ export function formatUpdatedAt(value?: string) {
   if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-  return date.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }

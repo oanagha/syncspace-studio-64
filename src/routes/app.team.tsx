@@ -21,10 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AnimatedBar } from "@/components/ux/motion";
-import {
-  ConfirmDeleteDialog,
-  DeleteEntityName,
-} from "@/components/ux/ConfirmDeleteDialog";
+import { ConfirmDeleteDialog, DeleteEntityName } from "@/components/ux/ConfirmDeleteDialog";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { memberAvatarColor } from "@/services/project.service";
 import {
@@ -144,7 +141,11 @@ function TeamPage() {
       invalidateTeam();
     },
     onError: (err) => {
-      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to send invite.");
+      toast.error(
+        err instanceof ApiRequestError || err instanceof Error
+          ? err.message
+          : "Failed to send invite.",
+      );
     },
   });
 
@@ -162,7 +163,11 @@ function TeamPage() {
       invalidateTeam();
     },
     onError: (err) => {
-      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to change role.");
+      toast.error(
+        err instanceof ApiRequestError || err instanceof Error
+          ? err.message
+          : "Failed to change role.",
+      );
     },
   });
 
@@ -176,7 +181,11 @@ function TeamPage() {
       invalidateTeam();
     },
     onError: (err) => {
-      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to remove member.");
+      toast.error(
+        err instanceof ApiRequestError || err instanceof Error
+          ? err.message
+          : "Failed to remove member.",
+      );
     },
   });
 
@@ -187,7 +196,11 @@ function TeamPage() {
       invalidateTeam();
     },
     onError: (err) => {
-      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to cancel invite.");
+      toast.error(
+        err instanceof ApiRequestError || err instanceof Error
+          ? err.message
+          : "Failed to cancel invite.",
+      );
     },
   });
 
@@ -211,9 +224,12 @@ function TeamPage() {
       ]);
 
       // Drop from "invitations for you" immediately; keep pending row briefly as Accepted.
-      queryClient.setQueryData<{ invitations: typeof myInvites }>(myInvitationsQueryKey(), (current) => ({
-        invitations: (current?.invitations ?? []).filter((item) => item.id !== invitationId),
-      }));
+      queryClient.setQueryData<{ invitations: typeof myInvites }>(
+        myInvitationsQueryKey(),
+        (current) => ({
+          invitations: (current?.invitations ?? []).filter((item) => item.id !== invitationId),
+        }),
+      );
 
       toast.success(`Joined ${data.workspace.name} — you're now a member`);
 
@@ -242,7 +258,11 @@ function TeamPage() {
       }, 1600);
     },
     onError: (err) => {
-      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to accept invite.");
+      toast.error(
+        err instanceof ApiRequestError || err instanceof Error
+          ? err.message
+          : "Failed to accept invite.",
+      );
     },
   });
 
@@ -322,10 +342,10 @@ function TeamPage() {
                 {(invite.workspace_name || invite.email)[0]?.toUpperCase()}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{invite.workspace_name || "Workspace"}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  Invited as {invite.role}
+                <p className="truncate text-sm font-semibold">
+                  {invite.workspace_name || "Workspace"}
                 </p>
+                <p className="truncate text-xs text-muted-foreground">Invited as {invite.role}</p>
               </div>
               <Button
                 variant="hero"
@@ -438,7 +458,9 @@ function TeamPage() {
           {membersQuery.isLoading ? (
             <p className="px-6 py-8 text-sm text-muted-foreground">Loading members…</p>
           ) : members.length === 0 ? (
-            <p className="px-6 py-8 text-sm text-muted-foreground">No members in this workspace yet.</p>
+            <p className="px-6 py-8 text-sm text-muted-foreground">
+              No members in this workspace yet.
+            </p>
           ) : null}
           {members.map((m, i) => {
             const busy =

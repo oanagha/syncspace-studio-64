@@ -19,10 +19,7 @@ import {
 } from "@/services/workspace.service";
 import { cn } from "@/lib/utils";
 import { RenameWorkspaceModal } from "@/components/workspace/RenameWorkspaceModal";
-import {
-  ConfirmDeleteDialog,
-  DeleteEntityName,
-} from "@/components/ux/ConfirmDeleteDialog";
+import { ConfirmDeleteDialog, DeleteEntityName } from "@/components/ux/ConfirmDeleteDialog";
 
 type WorkspaceSwitcherProps = {
   collapsed?: boolean;
@@ -184,8 +181,9 @@ export function WorkspaceSwitcher({ collapsed, onCreateWorkspace }: WorkspaceSwi
         title="Delete workspace?"
         description={
           <>
-            This permanently removes <DeleteEntityName>{activeWorkspace?.name ?? "this workspace"}</DeleteEntityName>{" "}
-            and all of its projects, tasks, files, and team data. This cannot be undone.
+            This permanently removes{" "}
+            <DeleteEntityName>{activeWorkspace?.name ?? "this workspace"}</DeleteEntityName> and all
+            of its projects, tasks, files, and team data. This cannot be undone.
           </>
         }
         confirmLabel="Delete workspace"

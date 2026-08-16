@@ -15,11 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { ApiRequestError } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import {
-  columnQueryKey,
-  createColumn,
-  type BoardColumn,
-} from "@/services/column.service";
+import { columnQueryKey, createColumn, type BoardColumn } from "@/services/column.service";
 import { PROJECT_COLORS } from "@/services/project.service";
 
 type AddColumnModalProps = {

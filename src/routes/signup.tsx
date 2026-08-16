@@ -12,7 +12,11 @@ export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
       { title: "Create your SyncSpace workspace — Free 14-day trial" },
-      { name: "description", content: "Start a free SyncSpace workspace in under a minute. Boards, docs, files and analytics that stay in sync with your whole team." },
+      {
+        name: "description",
+        content:
+          "Start a free SyncSpace workspace in under a minute. Boards, docs, files and analytics that stay in sync with your whole team.",
+      },
       { property: "og:title", content: "Create your SyncSpace workspace" },
       { property: "og:description", content: "Free 14-day trial. No credit card required." },
     ],

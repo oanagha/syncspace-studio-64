@@ -68,7 +68,9 @@ function AnalyticsPage() {
     return (
       <div className="surface-card mx-auto grid max-w-lg place-items-center gap-3 px-6 py-16 text-center">
         <h1 className="text-xl font-bold">Select a workspace</h1>
-        <p className="text-sm text-muted-foreground">Analytics are scoped to the active workspace.</p>
+        <p className="text-sm text-muted-foreground">
+          Analytics are scoped to the active workspace.
+        </p>
       </div>
     );
   }
@@ -79,7 +81,9 @@ function AnalyticsPage() {
       <div className="surface-card mx-auto grid max-w-lg place-items-center gap-3 px-6 py-16 text-center">
         <h1 className="text-xl font-bold">Couldn’t load analytics</h1>
         <p className="text-sm text-muted-foreground">
-          {err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to load analytics"}
+          {err instanceof ApiRequestError || err instanceof Error
+            ? err.message
+            : "Failed to load analytics"}
         </p>
         <Button variant="outline" onClick={() => void query.refetch()}>
           Try again
@@ -154,7 +158,9 @@ function AnalyticsPage() {
       </header>
 
       {query.isFetching && (
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Refreshing…</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Refreshing…
+        </p>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -162,9 +168,13 @@ function AnalyticsPage() {
           <div
             key={s.label}
             className="surface-card hover-lift p-5"
-            style={{ animation: `fade-up .28s cubic-bezier(.22,1,.36,1) ${Math.min(i * 20, 100)}ms both` }}
+            style={{
+              animation: `fade-up .28s cubic-bezier(.22,1,.36,1) ${Math.min(i * 20, 100)}ms both`,
+            }}
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{s.label}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {s.label}
+            </p>
             <p className="mt-2 text-3xl font-extrabold">
               <Counter to={s.value} suffix={s.suffix} decimals={s.decimals} />
             </p>
@@ -176,14 +186,22 @@ function AnalyticsPage() {
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <section className="surface-card p-6">
           <h2 className="text-lg font-bold">Task completion trend</h2>
-          <p className="text-sm text-muted-foreground">Completed vs created for the selected range</p>
+          <p className="text-sm text-muted-foreground">
+            Completed vs created for the selected range
+          </p>
           <div className="mt-6 h-72">
             {trend.some((point) => point.completed > 0 || point.created > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trend}>
                   <CartesianGrid vertical={false} stroke="var(--border)" />
                   <XAxis dataKey="week" tickLine={false} axisLine={false} fontSize={12} />
-                  <YAxis tickLine={false} axisLine={false} fontSize={12} width={32} allowDecimals={false} />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    fontSize={12}
+                    width={32}
+                    allowDecimals={false}
+                  />
                   <Tooltip contentStyle={{ borderRadius: 16, border: "1px solid var(--border)" }} />
                   <Line
                     type="monotone"
@@ -219,12 +237,21 @@ function AnalyticsPage() {
               <div className="mt-2 h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={donut} dataKey="value" innerRadius={58} outerRadius={88} paddingAngle={3} stroke="none">
+                    <Pie
+                      data={donut}
+                      dataKey="value"
+                      innerRadius={58}
+                      outerRadius={88}
+                      paddingAngle={3}
+                      stroke="none"
+                    >
                       {donut.map((d) => (
                         <Cell key={d.name} fill={d.color} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ borderRadius: 16, border: "1px solid var(--border)" }} />
+                    <Tooltip
+                      contentStyle={{ borderRadius: 16, border: "1px solid var(--border)" }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -232,7 +259,8 @@ function AnalyticsPage() {
                 {donut.map((d) => (
                   <div key={d.name} className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-2 text-muted-foreground">
-                      <span className="size-2.5 rounded-full" style={{ background: d.color }} /> {d.name}
+                      <span className="size-2.5 rounded-full" style={{ background: d.color }} />{" "}
+                      {d.name}
                     </span>
                     <span className="font-bold">{d.value}</span>
                   </div>
@@ -240,7 +268,9 @@ function AnalyticsPage() {
               </div>
             </>
           ) : (
-            <p className="mt-8 text-center text-sm text-muted-foreground">No tasks in this workspace yet.</p>
+            <p className="mt-8 text-center text-sm text-muted-foreground">
+              No tasks in this workspace yet.
+            </p>
           )}
         </section>
       </div>
@@ -253,7 +283,14 @@ function AnalyticsPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={workload} layout="vertical">
                   <XAxis type="number" hide />
-                  <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={64} fontSize={12} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    tickLine={false}
+                    axisLine={false}
+                    width={64}
+                    fontSize={12}
+                  />
                   <Tooltip
                     cursor={{ fill: "var(--muted)" }}
                     contentStyle={{ borderRadius: 16, border: "1px solid var(--border)" }}

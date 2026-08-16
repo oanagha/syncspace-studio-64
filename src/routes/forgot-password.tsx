@@ -12,7 +12,10 @@ export const Route = createFileRoute("/forgot-password")({
   head: () => ({
     meta: [
       { title: "Reset your SyncSpace password" },
-      { name: "description", content: "Reset your SyncSpace password with a verification code sent to your email." },
+      {
+        name: "description",
+        content: "Reset your SyncSpace password with a verification code sent to your email.",
+      },
       { property: "og:title", content: "Reset your SyncSpace password" },
       { property: "og:description", content: "Secure password reset for your SyncSpace account." },
     ],

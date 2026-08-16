@@ -23,10 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import {
-  ConfirmDeleteDialog,
-  DeleteEntityName,
-} from "@/components/ux/ConfirmDeleteDialog";
+import { ConfirmDeleteDialog, DeleteEntityName } from "@/components/ux/ConfirmDeleteDialog";
 import {
   PROJECT_COLORS,
   deleteProject,
@@ -160,134 +157,134 @@ export function EditProjectModal({ project, open, onOpenChange }: EditProjectMod
 
   return (
     <>
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="rounded-3xl duration-200 sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Edit project</DialogTitle>
-          <DialogDescription>Update details for this workspace project.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="edit-project-title">Title</Label>
-            <Input
-              id="edit-project-title"
-              value={form.title}
-              onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-              maxLength={150}
-              className="h-11 rounded-2xl"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit-project-description">Description</Label>
-            <Textarea
-              id="edit-project-description"
-              value={form.description}
-              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-              rows={3}
-              className="rounded-2xl"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select
-              value={form.status}
-              onValueChange={(value) => setForm((prev) => ({ ...prev, status: value }))}
-            >
-              <SelectTrigger className="h-11 rounded-2xl">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="On Track">On Track</SelectItem>
-                <SelectItem value="At Risk">At Risk</SelectItem>
-                <SelectItem value="Completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Color</Label>
-            <div className="flex flex-wrap gap-2">
-              {PROJECT_COLORS.map((hex) => (
-                <button
-                  key={hex}
-                  type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, color: hex }))}
-                  className={cn(
-                    "size-8 rounded-full border-2 transition-transform hover:scale-110",
-                    form.color === hex ? "border-foreground" : "border-transparent",
-                  )}
-                  style={{ background: hex }}
-                  aria-label={`Color ${hex}`}
-                  aria-pressed={form.color === hex}
-                />
-              ))}
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="rounded-3xl duration-200 sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit project</DialogTitle>
+            <DialogDescription>Update details for this workspace project.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-project-title">Title</Label>
+              <Input
+                id="edit-project-title"
+                value={form.title}
+                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                maxLength={150}
+                className="h-11 rounded-2xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-project-description">Description</Label>
+              <Textarea
+                id="edit-project-description"
+                value={form.description}
+                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                rows={3}
+                className="rounded-2xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select
+                value={form.status}
+                onValueChange={(value) => setForm((prev) => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger className="h-11 rounded-2xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="On Track">On Track</SelectItem>
+                  <SelectItem value="At Risk">At Risk</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Color</Label>
+              <div className="flex flex-wrap gap-2">
+                {PROJECT_COLORS.map((hex) => (
+                  <button
+                    key={hex}
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, color: hex }))}
+                    className={cn(
+                      "size-8 rounded-full border-2 transition-transform hover:scale-110",
+                      form.color === hex ? "border-foreground" : "border-transparent",
+                    )}
+                    style={{ background: hex }}
+                    aria-label={`Color ${hex}`}
+                    aria-pressed={form.color === hex}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-project-deadline">Deadline</Label>
+              <Input
+                id="edit-project-deadline"
+                type="date"
+                value={form.deadline}
+                onChange={(e) => setForm((prev) => ({ ...prev, deadline: e.target.value }))}
+                className="h-11 rounded-2xl"
+              />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit-project-deadline">Deadline</Label>
-            <Input
-              id="edit-project-deadline"
-              type="date"
-              value={form.deadline}
-              onChange={(e) => setForm((prev) => ({ ...prev, deadline: e.target.value }))}
-              className="h-11 rounded-2xl"
-            />
-          </div>
-        </div>
-        <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-auto"
-            onClick={() => setDeleteOpen(true)}
-            disabled={busy}
-          >
-            {deleteMutation.isPending && <Loader2 className="size-4 animate-spin" />}
-            {deleteMutation.isPending ? "Deleting..." : "Delete project"}
-          </Button>
-          <Button
-            variant="hero"
-            className="w-full sm:w-auto"
-            onClick={submit}
-            disabled={busy || !dirty}
-          >
-            {mutation.isPending && <Loader2 className="size-4 animate-spin" />}
-            {mutation.isPending ? "Saving..." : "Save changes"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-auto"
+              onClick={() => setDeleteOpen(true)}
+              disabled={busy}
+            >
+              {deleteMutation.isPending && <Loader2 className="size-4 animate-spin" />}
+              {deleteMutation.isPending ? "Deleting..." : "Delete project"}
+            </Button>
+            <Button
+              variant="hero"
+              className="w-full sm:w-auto"
+              onClick={submit}
+              disabled={busy || !dirty}
+            >
+              {mutation.isPending && <Loader2 className="size-4 animate-spin" />}
+              {mutation.isPending ? "Saving..." : "Save changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-    <ConfirmDeleteDialog
-      open={deleteOpen}
-      onOpenChange={setDeleteOpen}
-      title="Delete project?"
-      description={
-        <>
-          This permanently deletes <DeleteEntityName>{project.title}</DeleteEntityName>, including
-          its board, tasks, and related data. This cannot be undone.
-        </>
-      }
-      confirmLabel="Delete project"
-      pending={deleteMutation.isPending}
-      onConfirm={() => {
-        deleteMutation.mutate(undefined, {
-          onSuccess: () => setDeleteOpen(false),
-        });
-      }}
-    />
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete project?"
+        description={
+          <>
+            This permanently deletes <DeleteEntityName>{project.title}</DeleteEntityName>, including
+            its board, tasks, and related data. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete project"
+        pending={deleteMutation.isPending}
+        onConfirm={() => {
+          deleteMutation.mutate(undefined, {
+            onSuccess: () => setDeleteOpen(false),
+          });
+        }}
+      />
 
-    <ConfirmDeleteDialog
-      open={discardOpen}
-      onOpenChange={setDiscardOpen}
-      title="Discard changes?"
-      description="You have unsaved edits on this project. Closing now will lose those changes."
-      confirmLabel="Discard"
-      tone="caution"
-      onConfirm={() => {
-        setDiscardOpen(false);
-        onOpenChange(false);
-      }}
-    />
+      <ConfirmDeleteDialog
+        open={discardOpen}
+        onOpenChange={setDiscardOpen}
+        title="Discard changes?"
+        description="You have unsaved edits on this project. Closing now will lose those changes."
+        confirmLabel="Discard"
+        tone="caution"
+        onConfirm={() => {
+          setDiscardOpen(false);
+          onOpenChange(false);
+        }}
+      />
     </>
   );
 }

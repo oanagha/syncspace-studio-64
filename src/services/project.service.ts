@@ -96,13 +96,15 @@ export function canEditProject(role?: string | null) {
 }
 
 export function memberInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "?";
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "?"
+  );
 }
 
 export function memberAvatarColor(id: number) {

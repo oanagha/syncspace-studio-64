@@ -44,15 +44,8 @@ export type UpdateSubtaskResponse = {
   subtasks_total: number;
 };
 
-export async function updateSubtask(
-  taskId: number,
-  subtaskId: number,
-  input: UpdateSubtaskInput,
-) {
-  return apiPatch<UpdateSubtaskResponse>(
-    `/api/tasks/${taskId}/subtasks/${subtaskId}`,
-    input,
-  );
+export async function updateSubtask(taskId: number, subtaskId: number, input: UpdateSubtaskInput) {
+  return apiPatch<UpdateSubtaskResponse>(`/api/tasks/${taskId}/subtasks/${subtaskId}`, input);
 }
 
 export async function deleteSubtask(taskId: number, subtaskId: number) {

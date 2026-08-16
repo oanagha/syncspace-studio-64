@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { usePreferences } from "@/hooks/usePreferences";
-import { Check, Loader2 } from "lucide-react";
+import { Loader2, TriangleAlert } from "lucide-react";
 import { Bell, Link2, Palette, Shield, SlidersHorizontal, User } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,15 +26,15 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { ApiRequestError } from "@/lib/api";
 import { updateStoredUser } from "@/lib/auth";
+import { ConfirmDeleteDialog, DeleteEntityName } from "@/components/ux/ConfirmDeleteDialog";
 import {
-  ConfirmDeleteDialog,
-  DeleteEntityName,
-} from "@/components/ux/ConfirmDeleteDialog";
-import { canDeleteWorkspace, canRenameWorkspace, workspaceInitials } from "@/services/workspace.service";
+  canDeleteWorkspace,
+  canRenameWorkspace,
+  workspaceInitials,
+} from "@/services/workspace.service";
 import {
   ACCENT_THEMES,
   ACCENTS,
@@ -76,6 +77,17 @@ type SettingsSearch = {
   tab?: SettingsTab;
 };
 
+const THEME_LABELS: Record<ThemePreference, string> = {
+  light: "Light",
+  dark: "Dark",
+  system: "System",
+};
+
+const SIDEBAR_LABELS: Record<SidebarPreference, string> = {
+  expanded: "Expanded",
+  collapsed: "Collapsed",
+};
+
 export const Route = createFileRoute("/app/settings")({
   validateSearch: (search: Record<string, unknown>): SettingsSearch => {
     const tab = search["tab"];
@@ -84,7 +96,11 @@ export const Route = createFileRoute("/app/settings")({
   head: () => ({
     meta: [
       { title: "Profile & Settings — SyncSpace Workspace" },
-      { name: "description", content: "Update your profile, security, notification, appearance and workspace preferences plus connected accounts." },
+      {
+        name: "description",
+        content:
+          "Update your profile, security, notification, appearance and workspace preferences plus connected accounts.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -117,6 +133,7 @@ function SettingsPage() {
   const [disablePassword, setDisablePassword] = useState("");
   const [disableCode, setDisableCode] = useState("");
   const [twoFactorBusy, setTwoFactorBusy] = useState(false);
+  const [comingSoonFeature, setComingSoonFeature] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const canEditWorkspace = canRenameWorkspace(activeWorkspace?.role);
   const canRemoveWorkspace = canDeleteWorkspace(activeWorkspace?.role);
@@ -125,19 +142,25 @@ function SettingsPage() {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    setComingSoonFeature(null);
+  }, [activeTab]);
+
+  useLayoutEffect(() => {
     setDraft({
       ...preferences,
       workspaceName: preferences.workspaceName || activeWorkspace?.name || "",
     });
   }, [preferences, activeWorkspace?.name]);
 
-  useEffect(() => {
+  const skipInitialAccent = useRef(true);
+  useLayoutEffect(() => {
+    if (skipInitialAccent.current) {
+      skipInitialAccent.current = false;
+      return;
+    }
     applyAccent(draft.accent);
-    return () => {
-      applyAccent(preferences.accent);
-    };
-  }, [draft.accent, preferences.accent]);
+  }, [draft.accent]);
 
   const savePreferences = async (patch: PreferencesPatch, success = "Settings saved") => {
     try {
@@ -154,7 +177,11 @@ function SettingsPage() {
       toast.success(success);
       return next;
     } catch (err) {
-      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to save settings.");
+      toast.error(
+        err instanceof ApiRequestError || err instanceof Error
+          ? err.message
+          : "Failed to save settings.",
+      );
       return null;
     }
   };
@@ -177,7 +204,11 @@ function SettingsPage() {
       setDraft((current) => ({ ...current, avatarUrl: merged.avatarUrl }));
       toast.success("Photo updated");
     } catch (err) {
-      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to upload photo.");
+      toast.error(
+        err instanceof ApiRequestError || err instanceof Error
+          ? err.message
+          : "Failed to upload photo.",
+      );
     } finally {
       setAvatarBusy(false);
       if (avatarInputRef.current) avatarInputRef.current.value = "";
@@ -199,7 +230,11 @@ function SettingsPage() {
       setRemoveAvatarOpen(false);
       toast.success("Photo removed");
     } catch (err) {
-      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to remove photo.");
+      toast.error(
+        err instanceof ApiRequestError || err instanceof Error
+          ? err.message
+          : "Failed to remove photo.",
+      );
     } finally {
       setAvatarBusy(false);
     }
@@ -221,7 +256,9 @@ function SettingsPage() {
     <div className="mx-auto max-w-5xl space-y-6">
       <header>
         <h1 className="text-2xl font-extrabold sm:text-3xl">Settings</h1>
-        <p className="text-sm text-muted-foreground">Manage your account and workspace preferences.</p>
+        <p className="text-sm text-muted-foreground">
+          Manage your account and workspace preferences.
+        </p>
       </header>
 
       <Tabs
@@ -322,7 +359,9 @@ function SettingsPage() {
                 rows={3}
                 className="rounded-2xl"
                 value={draft.bio}
-                onChange={(event) => setDraft((current) => ({ ...current, bio: event.target.value }))}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, bio: event.target.value }))
+                }
               />
             </div>
             <SaveRow
@@ -394,7 +433,9 @@ function SettingsPage() {
                       setTotpCode("");
                       setSetupOpen(true);
                     } catch (err) {
-                      toast.error(err instanceof Error ? err.message : "Could not start 2FA setup.");
+                      toast.error(
+                        err instanceof Error ? err.message : "Could not start 2FA setup.",
+                      );
                     } finally {
                       setTwoFactorBusy(false);
                     }
@@ -409,20 +450,29 @@ function SettingsPage() {
               label="Login alerts"
               desc="Email me when a new device or location signs in."
               checked={draft.loginAlerts}
-              onCheckedChange={(loginAlerts) => setDraft((current) => ({ ...current, loginAlerts }))}
+              onCheckedChange={(loginAlerts) =>
+                setDraft((current) => ({ ...current, loginAlerts }))
+              }
             />
             <Separator />
             <div className="space-y-3">
               <p className="text-sm font-bold">Active sessions</p>
-              {[
-                ["This browser", "Current session"],
-              ].map(([d, t]) => (
-                <div key={d} className="flex items-center justify-between rounded-2xl border border-border px-4 py-3">
+              {[["This browser", "Current session"]].map(([d, t]) => (
+                <div
+                  key={d}
+                  className="flex items-center justify-between rounded-2xl border border-border px-4 py-3"
+                >
                   <div>
                     <p className="text-sm font-semibold">{d}</p>
                     <p className="text-xs text-muted-foreground">{t}</p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => toast.success(`Signed out of ${d}`)}>Revoke</Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toast.success(`Signed out of ${d}`)}
+                  >
+                    Revoke
+                  </Button>
                 </div>
               ))}
             </div>
@@ -465,7 +515,8 @@ function SettingsPage() {
               <DialogHeader>
                 <DialogTitle>Set up authenticator</DialogTitle>
                 <DialogDescription>
-                  Scan the QR code with Google Authenticator, Authy, or 1Password, then enter the 6-digit code.
+                  Scan the QR code with Google Authenticator, Authy, or 1Password, then enter the
+                  6-digit code.
                 </DialogDescription>
               </DialogHeader>
               {setupData ? (
@@ -500,7 +551,11 @@ function SettingsPage() {
                 </div>
               ) : null}
               <DialogFooter>
-                <Button variant="outline" onClick={() => setSetupOpen(false)} disabled={twoFactorBusy}>
+                <Button
+                  variant="outline"
+                  onClick={() => setSetupOpen(false)}
+                  disabled={twoFactorBusy}
+                >
                   Cancel
                 </Button>
                 <Button
@@ -572,7 +627,11 @@ function SettingsPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setDisableOpen(false)} disabled={twoFactorBusy}>
+                <Button
+                  variant="outline"
+                  onClick={() => setDisableOpen(false)}
+                  disabled={twoFactorBusy}
+                >
                   Cancel
                 </Button>
                 <Button
@@ -609,41 +668,53 @@ function SettingsPage() {
               label="In-app notifications"
               desc="Show mentions and alerts in the header. This setting is saved to your account."
               checked={draft.notifications}
-              onCheckedChange={(notifications) => setDraft((current) => ({ ...current, notifications }))}
+              onCheckedChange={(notifications) =>
+                setDraft((current) => ({ ...current, notifications }))
+              }
             />
             <Toggle
               label="Mentions"
               desc="Someone @mentions you in a comment or doc."
               checked={draft.notifyMentions}
-              onCheckedChange={(notifyMentions) => setDraft((current) => ({ ...current, notifyMentions }))}
+              onCheckedChange={(notifyMentions) =>
+                setDraft((current) => ({ ...current, notifyMentions }))
+              }
               disabled={!draft.notifications}
             />
             <Toggle
               label="Task assignments"
               desc="A task is assigned to you or reassigned."
               checked={draft.notifyAssignments}
-              onCheckedChange={(notifyAssignments) => setDraft((current) => ({ ...current, notifyAssignments }))}
+              onCheckedChange={(notifyAssignments) =>
+                setDraft((current) => ({ ...current, notifyAssignments }))
+              }
               disabled={!draft.notifications}
             />
             <Toggle
               label="Due date reminders"
               desc="24 hours before a task is due."
               checked={draft.notifyDueDates}
-              onCheckedChange={(notifyDueDates) => setDraft((current) => ({ ...current, notifyDueDates }))}
+              onCheckedChange={(notifyDueDates) =>
+                setDraft((current) => ({ ...current, notifyDueDates }))
+              }
               disabled={!draft.notifications}
             />
             <Toggle
               label="File uploads"
               desc="New files added to projects you follow."
               checked={draft.notifyFiles}
-              onCheckedChange={(notifyFiles) => setDraft((current) => ({ ...current, notifyFiles }))}
+              onCheckedChange={(notifyFiles) =>
+                setDraft((current) => ({ ...current, notifyFiles }))
+              }
               disabled={!draft.notifications}
             />
             <Toggle
               label="Weekly digest"
               desc="Monday summary of team productivity."
               checked={draft.notifyDigest}
-              onCheckedChange={(notifyDigest) => setDraft((current) => ({ ...current, notifyDigest }))}
+              onCheckedChange={(notifyDigest) =>
+                setDraft((current) => ({ ...current, notifyDigest }))
+              }
               disabled={!draft.notifications}
             />
             <SaveRow
@@ -671,9 +742,13 @@ function SettingsPage() {
                 <Label>Theme</Label>
                 <Select
                   value={draft.theme}
-                  onValueChange={(theme) => setDraft((current) => ({ ...current, theme: theme as ThemePreference }))}
+                  onValueChange={(theme) =>
+                    setDraft((current) => ({ ...current, theme: theme as ThemePreference }))
+                  }
                 >
-                  <SelectTrigger className="h-11 rounded-2xl"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-11 rounded-2xl">
+                    <span className="flex-1 truncate text-left">{THEME_LABELS[draft.theme]}</span>
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="light">Light</SelectItem>
                     <SelectItem value="dark">Dark</SelectItem>
@@ -689,7 +764,9 @@ function SettingsPage() {
                     setDraft((current) => ({ ...current, sidebar: sidebar as SidebarPreference }))
                   }
                 >
-                  <SelectTrigger className="h-11 rounded-2xl"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-11 rounded-2xl">
+                    <span className="flex-1 truncate text-left">{SIDEBAR_LABELS[draft.sidebar]}</span>
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="expanded">Expanded</SelectItem>
                     <SelectItem value="collapsed">Collapsed</SelectItem>
@@ -722,6 +799,9 @@ function SettingsPage() {
             title="Workspace preferences"
             desc={`Applies to everyone in ${draft.workspaceName || activeWorkspace?.name || "your workspace"}.`}
           >
+            {comingSoonFeature ? (
+              <ComingSoonNotice feature={comingSoonFeature} />
+            ) : null}
             <div className="grid gap-4 sm:grid-cols-2">
               <FieldInput
                 id="wn"
@@ -730,36 +810,50 @@ function SettingsPage() {
                 disabled={!canEditWorkspace}
                 onChange={(workspaceName) => setDraft((current) => ({ ...current, workspaceName }))}
               />
-              <FieldInput
-                id="wu"
-                label="Workspace URL"
-                value={`syncspace.io/${workspaceSlug || "workspace"}`}
-                readOnly
-              />
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setComingSoonFeature("Custom workspace URLs")}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setComingSoonFeature("Custom workspace URLs");
+                  }
+                }}
+              >
+                <FieldInput
+                  id="wu"
+                  label="Workspace URL"
+                  value={`syncspace.io/${workspaceSlug || "workspace"}`}
+                  readOnly
+                />
+              </div>
             </div>
             <Toggle
               label="Guest client access"
               desc="Allow comment-only guests on shared projects."
               checked={draft.guestAccess}
-              onCheckedChange={(guestAccess) => setDraft((current) => ({ ...current, guestAccess }))}
+              onCheckedChange={() => setComingSoonFeature("Guest client access")}
               disabled={!canEditWorkspace}
             />
             <Toggle
               label="Require 2FA for all members"
-              desc="Policy reminder for the workspace. Each member enables 2FA from Security settings."
+              desc="Require every member to enable two-factor authentication."
               checked={draft.require2fa}
-              onCheckedChange={(require2fa) => setDraft((current) => ({ ...current, require2fa }))}
+              onCheckedChange={() => setComingSoonFeature("Required 2FA for all members")}
               disabled={!canEditWorkspace}
             />
             <Toggle
               label="Public project templates"
               desc="Let members publish templates to the gallery."
               checked={draft.publicTemplates}
-              onCheckedChange={(publicTemplates) => setDraft((current) => ({ ...current, publicTemplates }))}
+              onCheckedChange={() => setComingSoonFeature("Public project templates")}
               disabled={!canEditWorkspace}
             />
             {!canEditWorkspace && (
-              <p className="text-xs text-muted-foreground">Only owners and admins can change workspace settings.</p>
+              <p className="text-xs text-muted-foreground">
+                Only owners and admins can change workspace settings.
+              </p>
             )}
             <SaveRow
               saving={saving}
@@ -770,9 +864,6 @@ function SettingsPage() {
                 savePreferences({
                   workspaceId: activeWorkspace.id,
                   workspaceName: draft.workspaceName,
-                  guestAccess: draft.guestAccess,
-                  require2fa: draft.require2fa,
-                  publicTemplates: draft.publicTemplates,
                 });
               }}
             />
@@ -799,31 +890,26 @@ function SettingsPage() {
 
         <TabsContent value="connected">
           <Card title="Connected accounts" desc="Bring context from the tools you already use.">
-            {connectedAccounts.map((account) => {
-              const on = draft[account.key];
-              return (
-                <div key={account.key} className="flex items-center justify-between rounded-2xl border border-border px-4 py-3.5">
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold">{account.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">{account.desc}</p>
-                  </div>
-                  <Button
-                    variant={on ? "outline" : "hero"}
-                    size="sm"
-                    disabled={saving}
-                    onClick={async () => {
-                      const next = await savePreferences(
-                        { [account.key]: !on },
-                        `${account.name} ${on ? "disconnected" : "connected"}`,
-                      );
-                      if (!next) return;
-                    }}
-                  >
-                    {on ? "Disconnect" : "Connect"}
-                  </Button>
+            {comingSoonFeature ? <ComingSoonNotice feature={comingSoonFeature} /> : null}
+            {connectedAccounts.map((account) => (
+              <div
+                key={account.key}
+                className="flex items-center justify-between rounded-2xl border border-border px-4 py-3.5"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-bold">{account.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{account.desc}</p>
                 </div>
-              );
-            })}
+                <Button
+                  type="button"
+                  variant="hero"
+                  size="sm"
+                  onClick={() => setComingSoonFeature(account.name)}
+                >
+                  Connect
+                </Button>
+              </div>
+            ))}
           </Card>
         </TabsContent>
       </Tabs>
@@ -862,7 +948,15 @@ function SettingsPage() {
   );
 }
 
-function Card({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
+function Card({
+  title,
+  desc,
+  children,
+}: {
+  title: string;
+  desc: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="surface-card space-y-6 p-6 sm:p-8">
       <div>
@@ -904,6 +998,19 @@ function FieldInput({
         className="h-11 rounded-2xl"
       />
     </div>
+  );
+}
+
+function ComingSoonNotice({ feature }: { feature: string }) {
+  return (
+    <Alert
+      role="alert"
+      className="border-warning/50 bg-warning/15 text-foreground [&>svg]:text-warning"
+    >
+      <TriangleAlert />
+      <AlertTitle>Coming soon</AlertTitle>
+      <AlertDescription>{feature} isn’t available yet. Check back shortly.</AlertDescription>
+    </Alert>
   );
 }
 
@@ -978,22 +1085,20 @@ function AccentPicker({
       <div className="flex flex-wrap gap-3">
         {ACCENTS.map((key) => {
           const theme = ACCENT_THEMES[key];
-          const active = value === key;
           return (
             <button
               key={key}
               type="button"
-              onClick={() => onChange(key)}
-              className="grid size-10 place-items-center rounded-2xl transition-transform hover:scale-110"
-              style={{
-                background: theme.hex,
-                boxShadow: active ? `0 0 0 2px var(--card), 0 0 0 4px ${theme.hex}` : undefined,
+              onClick={() => {
+                applyAccent(key);
+                onChange(key);
               }}
+              className="accent-swatch grid size-10 place-items-center rounded-2xl transition-transform hover:scale-110"
+              data-accent-swatch={key}
+              style={{ background: theme.hex, ["--swatch" as string]: theme.hex }}
               aria-label={`Accent ${theme.name}`}
-              aria-pressed={active}
-            >
-              {active && <Check className="size-4" style={{ color: "#fff" }} />}
-            </button>
+              aria-pressed={value === key}
+            />
           );
         })}
       </div>

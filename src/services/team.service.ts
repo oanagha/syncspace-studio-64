@@ -58,9 +58,7 @@ export async function inviteToWorkspace(input: {
 }
 
 export async function listInvitations(workspaceId: number) {
-  return apiGet<{ invitations: TeamInvitation[] }>(
-    `/api/team/invites?workspaceId=${workspaceId}`,
-  );
+  return apiGet<{ invitations: TeamInvitation[] }>(`/api/team/invites?workspaceId=${workspaceId}`);
 }
 
 export async function listMyInvitations() {

@@ -101,11 +101,36 @@ export const ACCENT_THEMES: Record<
   AccentPreference,
   { name: string; hex: string; primary: string; accent: string }
 > = {
-  ocean: { name: "Ocean", hex: "#1A4A6E", primary: "oklch(0.42 0.078 240)", accent: "oklch(0.746 0.069 187)" },
-  teal: { name: "Teal", hex: "#2D8A9E", primary: "oklch(0.55 0.085 215)", accent: "oklch(0.76 0.075 195)" },
-  aqua: { name: "Aqua", hex: "#5CBDB9", primary: "oklch(0.63 0.075 190)", accent: "oklch(0.8 0.07 185)" },
-  emerald: { name: "Emerald", hex: "#2F9E7D", primary: "oklch(0.58 0.095 168)", accent: "oklch(0.76 0.08 165)" },
-  amber: { name: "Amber", hex: "#D9A441", primary: "oklch(0.62 0.12 82)", accent: "oklch(0.8 0.1 88)" },
+  ocean: {
+    name: "Ocean",
+    hex: "#1A4A6E",
+    primary: "oklch(0.42 0.078 240)",
+    accent: "oklch(0.746 0.069 187)",
+  },
+  teal: {
+    name: "Teal",
+    hex: "#2D8A9E",
+    primary: "oklch(0.55 0.085 215)",
+    accent: "oklch(0.76 0.075 195)",
+  },
+  aqua: {
+    name: "Aqua",
+    hex: "#5CBDB9",
+    primary: "oklch(0.63 0.075 190)",
+    accent: "oklch(0.8 0.07 185)",
+  },
+  emerald: {
+    name: "Emerald",
+    hex: "#2F9E7D",
+    primary: "oklch(0.58 0.095 168)",
+    accent: "oklch(0.76 0.08 165)",
+  },
+  amber: {
+    name: "Amber",
+    hex: "#D9A441",
+    primary: "oklch(0.62 0.12 82)",
+    accent: "oklch(0.8 0.1 88)",
+  },
 };
 
 export function preferencesQueryKey(workspaceId?: number | null) {
@@ -190,6 +215,7 @@ export function applyAccent(accent: AccentPreference) {
   const theme = ACCENT_THEMES[accent];
   if (!theme) return;
   const root = document.documentElement;
+  root.dataset.accent = accent;
   root.style.setProperty("--primary", theme.primary);
   root.style.setProperty("--ring", theme.primary);
   root.style.setProperty("--accent", theme.accent);

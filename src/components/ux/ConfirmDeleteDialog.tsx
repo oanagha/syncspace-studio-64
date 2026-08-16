@@ -60,10 +60,7 @@ export function ConfirmDeleteDialog({
 
         <AlertDialogHeader className="relative space-y-4 px-6 pb-2 pt-6 text-left sm:text-left">
           <div
-            className={cn(
-              "flex size-12 items-center justify-center rounded-2xl ring-1",
-              iconWrap,
-            )}
+            className={cn("flex size-12 items-center justify-center rounded-2xl ring-1", iconWrap)}
           >
             <Trash2 className="size-5" strokeWidth={2.25} />
           </div>
@@ -108,7 +105,5 @@ export function ConfirmDeleteDialog({
 
 /** Highlight a name inside delete copy without breaking the sentence. */
 export function DeleteEntityName({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="font-semibold text-foreground">“{children}”</span>
-  );
+  return <span className="font-semibold text-foreground">“{children}”</span>;
 }

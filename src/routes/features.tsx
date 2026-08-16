@@ -43,25 +43,61 @@ const groups = [
   {
     title: "Collaborate",
     items: [
-      { icon: Kanban, title: "Realtime boards", body: "Drag, drop and reorder with live cursors visible to everyone instantly." },
-      { icon: MessageSquare, title: "Threaded comments", body: "Mentions, reactions and resolvable threads that keep tasks readable." },
-      { icon: Users, title: "Guest client access", body: "Comment-only guests scoped to one project. No wasted seats." },
+      {
+        icon: Kanban,
+        title: "Realtime boards",
+        body: "Drag, drop and reorder with live cursors visible to everyone instantly.",
+      },
+      {
+        icon: MessageSquare,
+        title: "Threaded comments",
+        body: "Mentions, reactions and resolvable threads that keep tasks readable.",
+      },
+      {
+        icon: Users,
+        title: "Guest client access",
+        body: "Comment-only guests scoped to one project. No wasted seats.",
+      },
     ],
   },
   {
     title: "Organise",
     items: [
-      { icon: FileStack, title: "Shared files", body: "Drop 5 GB assets onto a task with previews and versioned history." },
-      { icon: Workflow, title: "Custom workflows", body: "Statuses, automations and templates tailored per project." },
-      { icon: Search, title: "Instant search", body: "Find any task, file or comment across every workspace in milliseconds." },
+      {
+        icon: FileStack,
+        title: "Shared files",
+        body: "Drop 5 GB assets onto a task with previews and versioned history.",
+      },
+      {
+        icon: Workflow,
+        title: "Custom workflows",
+        body: "Statuses, automations and templates tailored per project.",
+      },
+      {
+        icon: Search,
+        title: "Instant search",
+        body: "Find any task, file or comment across every workspace in milliseconds.",
+      },
     ],
   },
   {
     title: "Scale",
     items: [
-      { icon: BarChart3, title: "Deep analytics", body: "Cycle time, throughput and workload balance computed continuously." },
-      { icon: Bell, title: "Smart notifications", body: "Digest, mute and escalate — noise stays out of your focus time." },
-      { icon: Lock, title: "Enterprise security", body: "SOC 2 Type II, SSO/SAML, audit logs and regional data residency." },
+      {
+        icon: BarChart3,
+        title: "Deep analytics",
+        body: "Cycle time, throughput and workload balance computed continuously.",
+      },
+      {
+        icon: Bell,
+        title: "Smart notifications",
+        body: "Digest, mute and escalate — noise stays out of your focus time.",
+      },
+      {
+        icon: Lock,
+        title: "Enterprise security",
+        body: "SOC 2 Type II, SSO/SAML, audit logs and regional data residency.",
+      },
     ],
   },
 ];

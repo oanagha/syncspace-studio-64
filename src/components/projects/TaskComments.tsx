@@ -4,9 +4,7 @@ import { Loader2, Pencil, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  ConfirmDeleteDialog,
-} from "@/components/ux/ConfirmDeleteDialog";
+import { ConfirmDeleteDialog } from "@/components/ux/ConfirmDeleteDialog";
 import { getUser } from "@/lib/auth";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { memberAvatarColor, memberInitials } from "@/services/project.service";
@@ -162,8 +160,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
             const isOwn = user?.id === comment.user.id;
             const canDelete = canDeleteComment(comment, user?.id, activeWorkspace?.role);
             const isEditing = editingId === comment.id;
-            const deleting =
-              deleteMutation.isPending && deleteMutation.variables === comment.id;
+            const deleting = deleteMutation.isPending && deleteMutation.variables === comment.id;
 
             return (
               <div key={comment.id} className="flex gap-2.5">

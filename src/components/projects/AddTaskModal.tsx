@@ -22,7 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createTask, TASK_PRIORITIES, taskQueryKey, type ProjectTask } from "@/services/task.service";
+import {
+  createTask,
+  TASK_PRIORITIES,
+  taskQueryKey,
+  type ProjectTask,
+} from "@/services/task.service";
 import { columnQueryKey, columnTitle, listColumns } from "@/services/column.service";
 import { getProject, projectDetailQueryKey } from "@/services/project.service";
 import { boardQueryKey, type BoardPayload } from "@/services/board.service";
@@ -162,15 +167,15 @@ export function AddTaskModal({
     >
       {showTrigger && (
         <DialogTrigger asChild>
-          <Button variant="hero">
-            {showIcon && <Plus />} Add task
-          </Button>
+          <Button variant="hero">{showIcon && <Plus />} Add task</Button>
         </DialogTrigger>
       )}
       <DialogContent className="rounded-3xl sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add a task</DialogTitle>
-          <DialogDescription>Tasks belong to this project and show up on its board.</DialogDescription>
+          <DialogDescription>
+            Tasks belong to this project and show up on its board.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
@@ -263,7 +268,12 @@ export function AddTaskModal({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="hero" className="w-full sm:w-auto" onClick={submit} disabled={mutation.isPending}>
+          <Button
+            variant="hero"
+            className="w-full sm:w-auto"
+            onClick={submit}
+            disabled={mutation.isPending}
+          >
             {mutation.isPending && <Loader2 className="size-4 animate-spin" />}
             {mutation.isPending ? "Adding..." : "Add task"}
           </Button>

@@ -35,9 +35,18 @@ const stats = [
 ];
 
 const principles = [
-  { title: "Instant beats featureful", body: "If a feature adds latency to the shared surface, it does not ship." },
-  { title: "Context over notification", body: "Work should explain itself. We design for fewer pings, not more." },
-  { title: "Small teams, big leverage", body: "Freelancers and five-person startups get the same engine as enterprises." },
+  {
+    title: "Instant beats featureful",
+    body: "If a feature adds latency to the shared surface, it does not ship.",
+  },
+  {
+    title: "Context over notification",
+    body: "Work should explain itself. We design for fewer pings, not more.",
+  },
+  {
+    title: "Small teams, big leverage",
+    body: "Freelancers and five-person startups get the same engine as enterprises.",
+  },
 ];
 
 function AboutPage() {

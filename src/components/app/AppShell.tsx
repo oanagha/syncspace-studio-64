@@ -98,13 +98,15 @@ export function AppShell() {
         status: "all",
         sort: "recent",
       }),
-    enabled: Boolean(getToken()) && Number.isInteger(workspaceId) && (workspaceId ?? 0) > 0 && cmdOpen,
+    enabled:
+      Boolean(getToken()) && Number.isInteger(workspaceId) && (workspaceId ?? 0) > 0 && cmdOpen,
   });
 
   const paletteMembersQuery = useQuery({
     queryKey: teamMembersQueryKey(workspaceId),
     queryFn: () => listMembers(workspaceId!),
-    enabled: Boolean(getToken()) && Number.isInteger(workspaceId) && (workspaceId ?? 0) > 0 && cmdOpen,
+    enabled:
+      Boolean(getToken()) && Number.isInteger(workspaceId) && (workspaceId ?? 0) > 0 && cmdOpen,
   });
 
   const paletteProjects = paletteProjectsQuery.data?.projects ?? [];
@@ -112,10 +114,13 @@ export function AppShell() {
 
   const patchNotificationCache = useCallback(
     (updater: (current: NotificationsPayload) => NotificationsPayload) => {
-      queryClient.setQueryData(notificationQueryKey(), (current: NotificationsPayload | undefined) => {
-        if (!current) return current;
-        return updater(current);
-      });
+      queryClient.setQueryData(
+        notificationQueryKey(),
+        (current: NotificationsPayload | undefined) => {
+          if (!current) return current;
+          return updater(current);
+        },
+      );
     },
     [queryClient],
   );
@@ -136,7 +141,11 @@ export function AppShell() {
       });
     },
     onError: (err) => {
-      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to mark as read.");
+      toast.error(
+        err instanceof ApiRequestError || err instanceof Error
+          ? err.message
+          : "Failed to mark as read.",
+      );
     },
   });
 
@@ -154,7 +163,11 @@ export function AppShell() {
       toast.success("All notifications marked as read");
     },
     onError: (err) => {
-      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to mark all as read.");
+      toast.error(
+        err instanceof ApiRequestError || err instanceof Error
+          ? err.message
+          : "Failed to mark all as read.",
+      );
     },
   });
 
@@ -286,7 +299,12 @@ export function AppShell() {
         )}
       </aside>
 
-      <div className={cn("transition-[padding] duration-500", collapsed ? "lg:pl-[76px]" : "lg:pl-[264px]")}>
+      <div
+        className={cn(
+          "transition-[padding] duration-500",
+          collapsed ? "lg:pl-[76px]" : "lg:pl-[264px]",
+        )}
+      >
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border glass px-4 sm:px-6">
           <Link to="/" className="lg:hidden">
             <Logo mark />
@@ -353,9 +371,13 @@ export function AppShell() {
                         onClick={() => {
                           void openNotification(n);
                         }}
-                        disabled={markOneMutation.isPending && markOneMutation.variables?.id === n.id}
+                        disabled={
+                          markOneMutation.isPending && markOneMutation.variables?.id === n.id
+                        }
                         className="flex w-full gap-3 border-b border-border px-4 py-3 text-left last:border-0 hover:bg-muted/50 disabled:opacity-60"
-                        style={{ animation: `slide-in-right .35s cubic-bezier(.22,1,.36,1) ${i * 60}ms both` }}
+                        style={{
+                          animation: `slide-in-right .35s cubic-bezier(.22,1,.36,1) ${i * 60}ms both`,
+                        }}
                       >
                         <span
                           className={cn(
@@ -390,7 +412,9 @@ export function AppShell() {
                   >
                     {!avatarSrc && userInitials}
                   </span>
-                  <span className="hidden text-sm font-semibold sm:inline">{userName.split(" ")[0]}</span>
+                  <span className="hidden text-sm font-semibold sm:inline">
+                    {userName.split(" ")[0]}
+                  </span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-2xl">

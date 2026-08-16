@@ -37,7 +37,12 @@ export function PlanCta({ name, price, cta, variant = "outline", className }: Pl
           </AlertDescription>
         </Alert>
       ) : null}
-      <Button type="button" variant={variant} className={className} onClick={() => setComingSoon(true)}>
+      <Button
+        type="button"
+        variant={variant}
+        className={className}
+        onClick={() => setComingSoon(true)}
+      >
         {cta}
       </Button>
     </div>

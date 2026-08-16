@@ -115,11 +115,7 @@ export async function updateTaskDueDate(taskId: number, dueDate: string | null) 
   return apiPatch<{ task: ProjectTask }>(`/api/tasks/${taskId}/due-date`, { dueDate });
 }
 
-export function applyTaskPatch(
-  tasks: ProjectTask[],
-  taskId: number,
-  patch: Partial<ProjectTask>,
-) {
+export function applyTaskPatch(tasks: ProjectTask[], taskId: number, patch: Partial<ProjectTask>) {
   return tasks.map((task) => (task.id === taskId ? { ...task, ...patch } : task));
 }
 
@@ -145,9 +141,7 @@ export function applyTaskAssignee(
   assignee: TaskAssignee | null,
 ) {
   return tasks.map((task) =>
-    task.id === taskId
-      ? { ...task, assignee_id: assignee?.id ?? null, assignee }
-      : task,
+    task.id === taskId ? { ...task, assignee_id: assignee?.id ?? null, assignee } : task,
   );
 }
 
@@ -175,8 +169,5 @@ export function applyTaskMove(
   const nextOrder = Math.max(0, Math.min(order, target.length));
   target.splice(nextOrder, 0, { ...task, column: columnId });
 
-  return [
-    ...rest,
-    ...target.map((item, index) => ({ ...item, order: index })),
-  ];
+  return [...rest, ...target.map((item, index) => ({ ...item, order: index }))];
 }

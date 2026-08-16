@@ -68,7 +68,14 @@ export function ProgressRing({
   return (
     <div className="relative grid place-items-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--muted)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="var(--muted)"
+          strokeWidth={stroke}
+        />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -86,7 +93,13 @@ export function ProgressRing({
   );
 }
 
-export function AnimatedBar({ value, color = "var(--primary)" }: { value: number; color?: string }) {
+export function AnimatedBar({
+  value,
+  color = "var(--primary)",
+}: {
+  value: number;
+  color?: string;
+}) {
   return (
     <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
       <div

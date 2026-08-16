@@ -13,12 +13,7 @@ type TaskDueDatePickerProps = {
   onChange: (dueDate: string | null) => void;
 };
 
-export function TaskDueDatePicker({
-  dueDate,
-  column,
-  disabled,
-  onChange,
-}: TaskDueDatePickerProps) {
+export function TaskDueDatePicker({ dueDate, column, disabled, onChange }: TaskDueDatePickerProps) {
   const overdue = isTaskOverdue({ due_date: dueDate, column });
 
   return (

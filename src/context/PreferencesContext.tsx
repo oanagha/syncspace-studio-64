@@ -4,11 +4,13 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { PREFERENCES_STORAGE_KEY } from "@/lib/appearance-boot";
 import { updateStoredUser } from "@/lib/auth";
 import {
   ACCENTS,
@@ -31,7 +33,7 @@ import {
   type UserPreferences,
 } from "@/services/settings.service";
 
-const STORAGE_KEY = "syncspace.preferences";
+const STORAGE_KEY = PREFERENCES_STORAGE_KEY;
 
 type PreferencesContextValue = {
   preferences: UserPreferences;
@@ -78,16 +80,12 @@ function asWorkspaceId(value: unknown): number | null {
 function parsePreferences(value: unknown): UserPreferences | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Partial<UserPreferences>;
-  if (!isTheme(raw.theme) || !isLanguage(raw.language) || !isSidebar(raw.sidebar)) {
-    return null;
-  }
-  if (typeof raw.notifications !== "boolean") return null;
   return {
     ...DEFAULT_PREFERENCES,
-    theme: raw.theme,
-    language: raw.language,
-    notifications: raw.notifications,
-    sidebar: raw.sidebar,
+    theme: isTheme(raw.theme) ? raw.theme : DEFAULT_PREFERENCES.theme,
+    language: isLanguage(raw.language) ? raw.language : DEFAULT_PREFERENCES.language,
+    notifications: asBoolean(raw.notifications, DEFAULT_PREFERENCES.notifications),
+    sidebar: isSidebar(raw.sidebar) ? raw.sidebar : DEFAULT_PREFERENCES.sidebar,
     density: isDensity(raw.density) ? raw.density : DEFAULT_PREFERENCES.density,
     accent: isAccent(raw.accent) ? raw.accent : DEFAULT_PREFERENCES.accent,
     reduceMotion: asBoolean(raw.reduceMotion, DEFAULT_PREFERENCES.reduceMotion),
@@ -120,7 +118,10 @@ function normalizePreferences(
   value: unknown,
   fallback: UserPreferences = DEFAULT_PREFERENCES,
 ): UserPreferences {
-  return parsePreferences({ ...fallback, ...(value && typeof value === "object" ? value : {}) }) ?? fallback;
+  return (
+    parsePreferences({ ...fallback, ...(value && typeof value === "object" ? value : {}) }) ??
+    fallback
+  );
 }
 
 function readCachedPreferences(): UserPreferences | null {
@@ -165,13 +166,21 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const { activeWorkspace } = useWorkspace();
   const workspaceId = activeWorkspace?.id ?? null;
-  const [preferences, setPreferences] = useState<UserPreferences>(
-    () => readCachedPreferences() ?? DEFAULT_PREFERENCES,
-  );
+  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const cacheHydrated = useRef(false);
 
   useLayoutEffect(() => {
+    if (!cacheHydrated.current) {
+      cacheHydrated.current = true;
+      const cached = readCachedPreferences();
+      if (cached) {
+        setPreferences(cached);
+        applyAppearance(cached);
+        return;
+      }
+    }
     applyAppearance(preferences);
   }, [preferences]);
 

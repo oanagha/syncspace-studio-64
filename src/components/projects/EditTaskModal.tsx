@@ -24,10 +24,7 @@ import {
 import { TaskAttachments } from "@/components/projects/TaskAttachments";
 import { TaskComments } from "@/components/projects/TaskComments";
 import { TaskSubtasks } from "@/components/projects/TaskSubtasks";
-import {
-  ConfirmDeleteDialog,
-  DeleteEntityName,
-} from "@/components/ux/ConfirmDeleteDialog";
+import { ConfirmDeleteDialog, DeleteEntityName } from "@/components/ux/ConfirmDeleteDialog";
 import { useDeleteTask } from "@/hooks/useDeleteTask";
 import { columnQueryKey, columnTitle, listColumns } from "@/services/column.service";
 import { getProject, projectDetailQueryKey } from "@/services/project.service";
@@ -314,9 +311,7 @@ export function EditTaskModal({ task: initialTask, open, onOpenChange }: EditTas
               </div>
             </div>
             {task?.id ? <TaskSubtasks taskId={task.id} projectId={task.project_id} /> : null}
-            {task?.id ? (
-              <TaskAttachments taskId={task.id} projectId={task.project_id} />
-            ) : null}
+            {task?.id ? <TaskAttachments taskId={task.id} projectId={task.project_id} /> : null}
             {task?.id ? <TaskComments taskId={task.id} /> : null}
           </div>
         </div>
@@ -348,8 +343,9 @@ export function EditTaskModal({ task: initialTask, open, onOpenChange }: EditTas
         title="Delete task?"
         description={
           <>
-            This will permanently remove <DeleteEntityName>{task?.title ?? "this task"}</DeleteEntityName>{" "}
-            and its comments, subtasks, and attachments. This cannot be undone.
+            This will permanently remove{" "}
+            <DeleteEntityName>{task?.title ?? "this task"}</DeleteEntityName> and its comments,
+            subtasks, and attachments. This cannot be undone.
           </>
         }
         confirmLabel="Delete task"

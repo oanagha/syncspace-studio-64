@@ -32,12 +32,7 @@ type EditColumnModalProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-export function EditColumnModal({
-  projectId,
-  column,
-  open,
-  onOpenChange,
-}: EditColumnModalProps) {
+export function EditColumnModal({ projectId, column, open, onOpenChange }: EditColumnModalProps) {
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [color, setColor] = useState(PROJECT_COLORS[0]!);
@@ -68,9 +63,7 @@ export function EditColumnModal({
           if (!current) return current;
           return {
             tasks: current.tasks.map((task) =>
-              task.column === previousTitle
-                ? { ...task, column: columnTitle(data.column) }
-                : task,
+              task.column === previousTitle ? { ...task, column: columnTitle(data.column) } : task,
             ),
           };
         });
@@ -106,7 +99,9 @@ export function EditColumnModal({
       <DialogContent className="rounded-3xl sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit column</DialogTitle>
-          <DialogDescription>Update this column’s title or color. Changes show on the board immediately.</DialogDescription>
+          <DialogDescription>
+            Update this column’s title or color. Changes show on the board immediately.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">

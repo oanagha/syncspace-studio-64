@@ -32,9 +32,7 @@ export async function updateComment(taskId: number, commentId: number, content: 
 }
 
 export async function deleteComment(taskId: number, commentId: number) {
-  return apiDelete<{ message: string; id: number }>(
-    `/api/tasks/${taskId}/comments/${commentId}`,
-  );
+  return apiDelete<{ message: string; id: number }>(`/api/tasks/${taskId}/comments/${commentId}`);
 }
 
 export function formatCommentTime(value?: string) {

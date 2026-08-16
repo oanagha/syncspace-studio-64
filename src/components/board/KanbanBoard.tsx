@@ -10,10 +10,7 @@ import { TaskDueDatePicker } from "@/components/board/TaskDueDatePicker";
 import { TaskPriorityPicker } from "@/components/board/TaskPriorityPicker";
 import { AddTaskModal } from "@/components/projects/AddTaskModal";
 import { EditTaskModal } from "@/components/projects/EditTaskModal";
-import {
-  ConfirmDeleteDialog,
-  DeleteEntityName,
-} from "@/components/ux/ConfirmDeleteDialog";
+import { ConfirmDeleteDialog, DeleteEntityName } from "@/components/ux/ConfirmDeleteDialog";
 import { useDeleteTask } from "@/hooks/useDeleteTask";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -128,7 +125,12 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
       queryClient.setQueryData<{ tasks: ProjectTask[] }>(taskQueryKey(projectId), (current) => {
         if (!current) return { tasks: [data.task] };
         return {
-          tasks: applyTaskMove(current.tasks, data.task.id, data.status.columnId, data.status.order),
+          tasks: applyTaskMove(
+            current.tasks,
+            data.task.id,
+            data.status.columnId,
+            data.status.order,
+          ),
         };
       });
       void queryClient.invalidateQueries({ queryKey: projectDetailQueryKey(projectId) });
@@ -144,9 +146,7 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
       await queryClient.cancelQueries({ queryKey: key });
       const previous = queryClient.getQueryData<{ tasks: ProjectTask[] }>(key);
       const member = assigneeId == null ? null : members.find((item) => item.id === assigneeId);
-      const assignee: TaskAssignee | null = member
-        ? { id: member.id, name: member.name }
-        : null;
+      const assignee: TaskAssignee | null = member ? { id: member.id, name: member.name } : null;
       queryClient.setQueryData<{ tasks: ProjectTask[] }>(key, (current) => {
         if (!current) return current;
         return { tasks: applyTaskAssignee(current.tasks, taskId, assignee) };
@@ -277,7 +277,10 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
     if (!next) return;
     const unchanged =
       next.length === columns.length &&
-      next.every((column, index) => column.id === columns[index]?.id && column.position === columns[index]?.position);
+      next.every(
+        (column, index) =>
+          column.id === columns[index]?.id && column.position === columns[index]?.position,
+      );
     if (unchanged) return;
     reorderMutation.mutate(next);
   };
@@ -431,7 +434,11 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
                     className="size-7 text-muted-foreground hover:text-destructive"
                     disabled={columns.length <= 1}
                     aria-label={`Delete ${col}`}
-                    title={columns.length <= 1 ? "Cannot delete the last remaining column" : `Delete ${col}`}
+                    title={
+                      columns.length <= 1
+                        ? "Cannot delete the last remaining column"
+                        : `Delete ${col}`
+                    }
                     onClick={() => setDeletingColumn(column)}
                   >
                     <Trash2 className="size-3.5" />
@@ -458,15 +465,11 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
                     onDragOver={() => setOverTaskId(t.id)}
                     onEdit={() => setEditingTask(t)}
                     members={members}
-                    onAssign={(assigneeId) =>
-                      assignMutation.mutate({ taskId: t.id, assigneeId })
-                    }
+                    onAssign={(assigneeId) => assignMutation.mutate({ taskId: t.id, assigneeId })}
                     onPriorityChange={(priority) =>
                       priorityMutation.mutate({ taskId: t.id, priority })
                     }
-                    onDueDateChange={(dueDate) =>
-                      dueDateMutation.mutate({ taskId: t.id, dueDate })
-                    }
+                    onDueDateChange={(dueDate) => dueDateMutation.mutate({ taskId: t.id, dueDate })}
                     onDelete={() => setPendingTaskDelete(t)}
                   />
                 ))}
@@ -491,11 +494,7 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
         </button>
       </div>
 
-      <AddColumnModal
-        projectId={projectId}
-        open={addColumnOpen}
-        onOpenChange={setAddColumnOpen}
-      />
+      <AddColumnModal projectId={projectId} open={addColumnOpen} onOpenChange={setAddColumnOpen} />
       <EditColumnModal
         projectId={projectId}
         column={editingColumn}
@@ -647,7 +646,9 @@ function TaskCard({
       </div>
       <h3 className="mt-3 text-sm font-bold leading-snug">{task.title}</h3>
       {task.description?.trim() && (
-        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{task.description}</p>
+        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+          {task.description}
+        </p>
       )}
       {(task.subtasks_total ?? 0) > 0 && (
         <div className="mt-2 space-y-1.5">

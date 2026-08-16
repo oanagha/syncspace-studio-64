@@ -39,14 +39,16 @@ export function TaskPriorityPicker({ priority, disabled, onChange }: TaskPriorit
           {priority}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-36 rounded-2xl" onClick={(e) => e.stopPropagation()}>
+      <DropdownMenuContent
+        align="start"
+        className="w-36 rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {TASK_PRIORITIES.map((value) => (
-          <DropdownMenuItem
-            key={value}
-            className="rounded-xl"
-            onSelect={() => onChange(value)}
-          >
-            <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", priorityStyle[value])}>
+          <DropdownMenuItem key={value} className="rounded-xl" onSelect={() => onChange(value)}>
+            <span
+              className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", priorityStyle[value])}
+            >
               {value}
             </span>
           </DropdownMenuItem>

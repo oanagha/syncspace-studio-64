@@ -196,7 +196,8 @@ function InviteAcceptPage() {
               <Check className="size-4" /> Invitation accepted
             </p>
             <p className="mt-1 text-muted-foreground">
-              You are now a <span className="font-semibold text-foreground">{role || "Member"}</span> of{" "}
+              You are now a{" "}
+              <span className="font-semibold text-foreground">{role || "Member"}</span> of{" "}
               <span className="font-semibold text-foreground">{workspaceName}</span>.
             </p>
           </div>

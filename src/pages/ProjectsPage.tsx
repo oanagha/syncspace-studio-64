@@ -45,7 +45,10 @@ export function ProjectsPage() {
   const projects = projectsQuery.data?.projects ?? [];
   const showEmptyWorkspace = !workspaceLoading && !activeWorkspace;
   const showEmptyProjects =
-    Boolean(activeWorkspace) && !projectsQuery.isLoading && !projectsQuery.isError && projects.length === 0;
+    Boolean(activeWorkspace) &&
+    !projectsQuery.isLoading &&
+    !projectsQuery.isError &&
+    projects.length === 0;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -125,18 +128,21 @@ export function ProjectsPage() {
         </div>
       )}
 
-      {activeWorkspace && !projectsQuery.isLoading && !projectsQuery.isError && projects.length > 0 && (
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {projects.map((project, index) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              subtitle={workspaceName}
-              index={index}
-            />
-          ))}
-        </div>
-      )}
+      {activeWorkspace &&
+        !projectsQuery.isLoading &&
+        !projectsQuery.isError &&
+        projects.length > 0 && (
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {projects.map((project, index) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                subtitle={workspaceName}
+                index={index}
+              />
+            ))}
+          </div>
+        )}
     </div>
   );
 }

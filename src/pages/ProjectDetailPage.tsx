@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, FolderKanban, ListTodo, Pencil, SquareKanban, Trash2, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  FolderKanban,
+  ListTodo,
+  Pencil,
+  SquareKanban,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,10 +18,7 @@ import { AddTaskModal } from "@/components/projects/AddTaskModal";
 import { EditProjectModal } from "@/components/projects/EditProjectModal";
 import { EditTaskModal } from "@/components/projects/EditTaskModal";
 import { ProgressCircle } from "@/components/projects/ProgressCircle";
-import {
-  ConfirmDeleteDialog,
-  DeleteEntityName,
-} from "@/components/ux/ConfirmDeleteDialog";
+import { ConfirmDeleteDialog, DeleteEntityName } from "@/components/ux/ConfirmDeleteDialog";
 import { ApiRequestError } from "@/lib/api";
 import { useDeleteTask } from "@/hooks/useDeleteTask";
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -35,13 +41,7 @@ type ProjectDetailPageProps = {
   projectId: number;
 };
 
-function AccessState({
-  title,
-  message,
-}: {
-  title: string;
-  message: string;
-}) {
+function AccessState({ title, message }: { title: string; message: string }) {
   return (
     <div className="surface-card mx-auto grid max-w-lg place-items-center gap-3 px-6 py-16 text-center">
       <FolderKanban className="size-10 text-muted-foreground" />
@@ -314,16 +314,23 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
         ) : (
           <ul className="divide-y divide-border">
             {tasks.map((task) => (
-              <li key={task.id} className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
+              <li
+                key={task.id}
+                className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
+              >
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{task.title}</p>
                   {task.description?.trim() && (
-                    <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{task.description}</p>
+                    <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                      {task.description}
+                    </p>
                   )}
                   <p
                     className={cn(
                       "text-xs",
-                      isTaskOverdue(task) ? "font-semibold text-destructive" : "text-muted-foreground",
+                      isTaskOverdue(task)
+                        ? "font-semibold text-destructive"
+                        : "text-muted-foreground",
                     )}
                   >
                     {isTaskOverdue(task) ? "Overdue" : "Due"} {formatProjectDeadline(task.due_date)}

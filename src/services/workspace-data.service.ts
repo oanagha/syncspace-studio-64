@@ -17,10 +17,7 @@ export const workspaceQueryKeys = {
 /**
  * Drop cached data for a workspace that no longer exists.
  */
-export async function clearDeletedWorkspaceData(
-  workspaceId: number,
-  queryClient?: QueryClient,
-) {
+export async function clearDeletedWorkspaceData(workspaceId: number, queryClient?: QueryClient) {
   if (!queryClient) return;
 
   await Promise.all([
@@ -40,10 +37,7 @@ export async function clearDeletedWorkspaceData(
  * Invalidate all workspace-scoped caches after switch/create.
  * Also refreshes user-level notifications and preferences.
  */
-export async function refetchWorkspaceScopedData(
-  workspaceId: number,
-  queryClient?: QueryClient,
-) {
+export async function refetchWorkspaceScopedData(workspaceId: number, queryClient?: QueryClient) {
   if (!queryClient) return;
 
   await Promise.all([

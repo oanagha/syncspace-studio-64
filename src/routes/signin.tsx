@@ -224,7 +224,10 @@ function SignIn() {
           </div>
         </div>
         <div className="flex justify-end">
-          <Link to="/forgot-password" className="text-sm font-semibold text-primary hover:underline">
+          <Link
+            to="/forgot-password"
+            className="text-sm font-semibold text-primary hover:underline"
+          >
             Forgot password?
           </Link>
         </div>

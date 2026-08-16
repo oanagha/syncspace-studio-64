@@ -44,7 +44,9 @@ export function TaskAssigneePicker({
           title={assignee ? assignee.name : "Assign"}
           className={cn(
             "grid size-6 place-items-center rounded-full text-[9px] font-bold transition-transform hover:scale-110",
-            assignee ? "text-primary-foreground" : "border border-dashed border-border text-muted-foreground",
+            assignee
+              ? "text-primary-foreground"
+              : "border border-dashed border-border text-muted-foreground",
           )}
           style={assignee ? { background: memberAvatarColor(assignee.id) } : undefined}
           onPointerDown={(e) => e.stopPropagation()}
@@ -54,7 +56,11 @@ export function TaskAssigneePicker({
           {assignee ? memberInitials(assignee.name) : <UserPlus className="size-3" />}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52 rounded-2xl" onClick={(e) => e.stopPropagation()}>
+      <DropdownMenuContent
+        align="end"
+        className="w-52 rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <DropdownMenuLabel>Assign to</DropdownMenuLabel>
         <DropdownMenuItem className="rounded-xl" onSelect={() => onAssign(null)}>
           Unassigned
