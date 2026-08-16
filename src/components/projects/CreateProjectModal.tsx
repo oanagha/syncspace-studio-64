@@ -71,13 +71,16 @@ export function CreateProjectModal({ disabled }: CreateProjectModalProps) {
       return;
     }
 
-    mutation.mutate({
+    const payload: Parameters<typeof createProject>[0] = {
       workspaceId: activeWorkspace.id,
       title: trimmed,
-      description: description.trim() || undefined,
       color,
-      deadline: deadline || undefined,
-    });
+    };
+    const desc = description.trim();
+    if (desc) payload.description = desc;
+    if (deadline) payload.deadline = deadline;
+
+    mutation.mutate(payload);
   };
 
   return (

@@ -1,4 +1,4 @@
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPatch, apiPost } from "@/lib/api";
 
 export type AppNotification = {
   id: number;
@@ -6,9 +6,16 @@ export type AppNotification = {
   title: string;
   body: string;
   task_id: number | null;
+  project_id?: number | null;
   workspace_id: number | null;
   unread: boolean;
+  read_at?: string | null;
   created_at: string;
+};
+
+export type NotificationsPayload = {
+  notifications: AppNotification[];
+  unread_count: number;
 };
 
 export function notificationQueryKey() {
@@ -16,9 +23,18 @@ export function notificationQueryKey() {
 }
 
 export async function listNotifications() {
-  return apiGet<{ notifications: AppNotification[]; unread_count: number }>(
-    "/api/notifications",
+  return apiGet<NotificationsPayload>("/api/notifications");
+}
+
+export async function markNotificationRead(notificationId: number) {
+  return apiPatch<{ notification: { id: number; read_at: string } }>(
+    `/api/notifications/${notificationId}/read`,
+    {},
   );
+}
+
+export async function markAllNotificationsRead() {
+  return apiPost<{ message: string }>("/api/notifications/read-all", {});
 }
 
 export function formatNotificationTime(value?: string) {

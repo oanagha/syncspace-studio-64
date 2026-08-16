@@ -125,7 +125,10 @@ export function WorkspaceBoardPage() {
             {activeWorkspace.name} · live board from the API
           </p>
         </div>
-        <Select value={projectId ? String(projectId) : undefined} onValueChange={selectProject}>
+        <Select
+          {...(projectId ? { value: String(projectId) } : {})}
+          onValueChange={selectProject}
+        >
           <SelectTrigger className="h-11 w-full max-w-xs rounded-2xl">
             <SelectValue placeholder="Select a project" />
           </SelectTrigger>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -23,7 +24,13 @@ import {
 } from "@/components/ui/select";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import {
+  ConfirmDeleteDialog,
+  DeleteEntityName,
+} from "@/components/ux/ConfirmDeleteDialog";
+import {
   PROJECT_COLORS,
+  deleteProject,
+  projectDetailQueryKey,
   updateProject,
   type Project,
   type ProjectStatus,
@@ -55,9 +62,12 @@ function toFormState(project: Project): FormState {
 }
 
 export function EditProjectModal({ project, open, onOpenChange }: EditProjectModalProps) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { activeWorkspace } = useWorkspace();
   const [form, setForm] = useState<FormState>(() => toFormState(project));
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   useEffect(() => {
     if (open) setForm(toFormState(project));
@@ -106,11 +116,31 @@ export function EditProjectModal({ project, open, onOpenChange }: EditProjectMod
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteProject(project.id),
+    onSuccess: async () => {
+      queryClient.removeQueries({ queryKey: projectDetailQueryKey(project.id) });
+      if (activeWorkspace?.id) {
+        await queryClient.invalidateQueries({ queryKey: ["projects", activeWorkspace.id] });
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ["projects"] });
+      }
+      toast.success(`Project “${project.title}” deleted`);
+      onOpenChange(false);
+      void navigate({ to: "/app/projects" });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to delete project.");
+    },
+  });
+
+  const busy = mutation.isPending || deleteMutation.isPending;
+
   const handleOpenChange = (next: boolean) => {
-    if (mutation.isPending) return;
+    if (busy) return;
     if (!next && dirty) {
-      const discard = window.confirm("You have unsaved changes. Discard them?");
-      if (!discard) return;
+      setDiscardOpen(true);
+      return;
     }
     onOpenChange(next);
   };
@@ -129,6 +159,7 @@ export function EditProjectModal({ project, open, onOpenChange }: EditProjectMod
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="rounded-3xl duration-200 sm:max-w-lg">
         <DialogHeader>
@@ -202,12 +233,22 @@ export function EditProjectModal({ project, open, onOpenChange }: EditProjectMod
             />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-auto"
+            onClick={() => setDeleteOpen(true)}
+            disabled={busy}
+          >
+            {deleteMutation.isPending && <Loader2 className="size-4 animate-spin" />}
+            {deleteMutation.isPending ? "Deleting..." : "Delete project"}
+          </Button>
           <Button
             variant="hero"
             className="w-full sm:w-auto"
             onClick={submit}
-            disabled={mutation.isPending || !dirty}
+            disabled={busy || !dirty}
           >
             {mutation.isPending && <Loader2 className="size-4 animate-spin" />}
             {mutation.isPending ? "Saving..." : "Save changes"}
@@ -215,5 +256,38 @@ export function EditProjectModal({ project, open, onOpenChange }: EditProjectMod
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <ConfirmDeleteDialog
+      open={deleteOpen}
+      onOpenChange={setDeleteOpen}
+      title="Delete project?"
+      description={
+        <>
+          This permanently deletes <DeleteEntityName>{project.title}</DeleteEntityName>, including
+          its board, tasks, and related data. This cannot be undone.
+        </>
+      }
+      confirmLabel="Delete project"
+      pending={deleteMutation.isPending}
+      onConfirm={() => {
+        deleteMutation.mutate(undefined, {
+          onSuccess: () => setDeleteOpen(false),
+        });
+      }}
+    />
+
+    <ConfirmDeleteDialog
+      open={discardOpen}
+      onOpenChange={setDiscardOpen}
+      title="Discard changes?"
+      description="You have unsaved edits on this project. Closing now will lose those changes."
+      confirmLabel="Discard"
+      tone="caution"
+      onConfirm={() => {
+        setDiscardOpen(false);
+        onOpenChange(false);
+      }}
+    />
+    </>
   );
 }

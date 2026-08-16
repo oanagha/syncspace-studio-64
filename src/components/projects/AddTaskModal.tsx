@@ -22,9 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createTask, TASK_PRIORITIES } from "@/services/task.service";
+import { createTask, TASK_PRIORITIES, taskQueryKey, type ProjectTask } from "@/services/task.service";
 import { columnQueryKey, columnTitle, listColumns } from "@/services/column.service";
 import { getProject, projectDetailQueryKey } from "@/services/project.service";
+import { boardQueryKey, type BoardPayload } from "@/services/board.service";
 
 type AddTaskModalProps = {
   projectId: number;
@@ -82,21 +83,53 @@ export function AddTaskModal({
   };
 
   const mutation = useMutation({
-    mutationFn: () =>
-      createTask({
+    mutationFn: () => {
+      const payload: Parameters<typeof createTask>[0] = {
         projectId,
         title: title.trim(),
         description: description.trim(),
         columnId: column,
         assigneeId: assigneeId === "none" ? null : Number(assigneeId),
         priority,
-        dueDate: dueDate || undefined,
-      }),
+      };
+      if (dueDate) payload.dueDate = dueDate;
+      return createTask(payload);
+    },
     onSuccess: (data) => {
-      toast.success(`Task “${data.task.title}” added`);
+      const task = data.task;
+
+      // Board keeps tasks in a disabled query seeded from getBoard — invalidate alone won't refetch.
+      queryClient.setQueryData<{ tasks: ProjectTask[] }>(taskQueryKey(projectId), (current) => {
+        const existing = current?.tasks ?? [];
+        if (existing.some((item) => item.id === task.id)) return { tasks: existing };
+        return { tasks: [...existing, task] };
+      });
+
+      queryClient.setQueryData<BoardPayload>(boardQueryKey(projectId), (current) => {
+        if (!current) return current;
+        if (current.tasks.some((item) => item.id === task.id)) return current;
+        const activity = current.activity
+          ? {
+              ...current.activity,
+              total_tasks: current.activity.total_tasks + 1,
+              in_progress_tasks:
+                task.column === "In Progress"
+                  ? current.activity.in_progress_tasks + 1
+                  : current.activity.in_progress_tasks,
+              completed_tasks:
+                task.column === "Done"
+                  ? current.activity.completed_tasks + 1
+                  : current.activity.completed_tasks,
+            }
+          : current.activity;
+        return { ...current, tasks: [...current.tasks, task], activity };
+      });
+
+      toast.success(`Task “${task.title}” added`);
       reset();
       setOpen(false);
-      void queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+      void queryClient.invalidateQueries({ queryKey: boardQueryKey(projectId) });
+      void queryClient.invalidateQueries({ queryKey: taskQueryKey(projectId) });
       void queryClient.invalidateQueries({ queryKey: projectDetailQueryKey(projectId) });
       void queryClient.invalidateQueries({ queryKey: ["projects"] });
     },

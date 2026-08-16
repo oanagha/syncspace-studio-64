@@ -1,4 +1,5 @@
-import { apiGet, apiPut } from "@/lib/api";
+import { apiDelete, apiGet, apiPut, apiUploadFormData, getApiOrigin } from "@/lib/api";
+import { updateStoredUser } from "@/lib/auth";
 
 export const THEMES = ["light", "dark", "system"] as const;
 export const LANGUAGES = ["en", "es", "fr", "de", "pt"] as const;
@@ -36,6 +37,7 @@ export type UserPreferences = {
   jobTitle: string;
   timezone: string;
   bio: string;
+  avatarUrl: string | null;
   workspaceId: number | null;
   workspaceName: string;
   guestAccess: boolean;
@@ -46,6 +48,13 @@ export type UserPreferences = {
 export type PreferencesPatch = Partial<UserPreferences> & {
   currentPassword?: string;
   newPassword?: string;
+};
+
+export type SettingsUser = {
+  id: number;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
 };
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
@@ -72,6 +81,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   jobTitle: "",
   timezone: "",
   bio: "",
+  avatarUrl: null,
   workspaceId: null,
   workspaceName: "",
   guestAccess: true,
@@ -104,11 +114,75 @@ export function preferencesQueryKey(workspaceId?: number | null) {
 
 export async function getPreferences(workspaceId?: number | null) {
   const query = workspaceId ? `?workspaceId=${workspaceId}` : "";
-  return apiGet<{ preferences: UserPreferences }>(`/api/settings/preferences${query}`);
+  return apiGet<{ preferences: UserPreferences; user?: SettingsUser }>(
+    `/api/settings/preferences${query}`,
+  );
 }
 
 export async function updatePreferences(input: PreferencesPatch) {
-  return apiPut<{ preferences: UserPreferences }>("/api/settings/preferences", input);
+  return apiPut<{ preferences: UserPreferences; user?: SettingsUser }>(
+    "/api/settings/preferences",
+    input,
+  );
+}
+
+const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+const AVATAR_MIME = new Set(["image/png", "image/jpeg", "image/webp"]);
+
+export function validateAvatarFile(file: File): string | null {
+  if (!AVATAR_MIME.has(file.type)) {
+    return "Avatar must be a PNG, JPEG, or WebP image";
+  }
+  if (file.size > AVATAR_MAX_BYTES) {
+    return "Avatar must be 2 MB or smaller";
+  }
+  return null;
+}
+
+export function resolveAvatarUrl(avatarUrl?: string | null) {
+  if (!avatarUrl) return null;
+  if (/^https?:\/\//i.test(avatarUrl)) return avatarUrl;
+  const origin = getApiOrigin();
+  const path = avatarUrl.startsWith("/") ? avatarUrl : `/${avatarUrl}`;
+  return `${origin}${path}`;
+}
+
+export async function uploadAvatar(file: File) {
+  const formData = new FormData();
+  formData.append("avatar", file);
+  const result = await apiUploadFormData<{
+    message: string;
+    preferences: UserPreferences;
+    user: SettingsUser;
+  }>("/api/settings/avatar", formData);
+
+  if (result.user) {
+    updateStoredUser({
+      name: result.user.name,
+      email: result.user.email,
+      avatarUrl: result.user.avatarUrl,
+    });
+  }
+
+  return result;
+}
+
+export async function removeAvatar() {
+  const result = await apiDelete<{
+    message: string;
+    preferences: UserPreferences;
+    user: SettingsUser;
+  }>("/api/settings/avatar");
+
+  if (result.user) {
+    updateStoredUser({
+      name: result.user.name,
+      email: result.user.email,
+      avatarUrl: result.user.avatarUrl,
+    });
+  }
+
+  return result;
 }
 
 export function applyAccent(accent: AccentPreference) {
@@ -129,7 +203,7 @@ export function applyAccent(accent: AccentPreference) {
 
 export function applyDensity(density: DensityPreference) {
   if (typeof document === "undefined") return;
-  document.documentElement.dataset.density = density;
+  document.documentElement.dataset["density"] = density;
 }
 
 export function applyReduceMotion(enabled: boolean) {

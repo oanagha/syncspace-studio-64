@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "@/lib/api";
+import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 
 export type TaskCommentUser = {
   id: number;
@@ -23,6 +23,18 @@ export async function listComments(taskId: number) {
 
 export async function createComment(taskId: number, content: string) {
   return apiPost<{ comment: TaskComment }>(`/api/tasks/${taskId}/comments`, { content });
+}
+
+export async function updateComment(taskId: number, commentId: number, content: string) {
+  return apiPatch<{ comment: TaskComment }>(`/api/tasks/${taskId}/comments/${commentId}`, {
+    content,
+  });
+}
+
+export async function deleteComment(taskId: number, commentId: number) {
+  return apiDelete<{ message: string; id: number }>(
+    `/api/tasks/${taskId}/comments/${commentId}`,
+  );
 }
 
 export function formatCommentTime(value?: string) {

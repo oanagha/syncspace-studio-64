@@ -1,7 +1,7 @@
 import { getToken } from "@/lib/auth";
 
 function getApiBaseUrl() {
-  const fromEnv = import.meta.env.VITE_API_URL;
+  const fromEnv = import.meta.env["VITE_API_URL"];
   if (typeof fromEnv === "string" && fromEnv.trim()) {
     return fromEnv.replace(/\/$/, "");
   }
@@ -115,11 +115,36 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function apiDelete<T>(path: string, body?: unknown): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const init: RequestInit = {
     method: "DELETE",
     headers: authHeaders(),
-    body: body === undefined ? undefined : JSON.stringify(body),
+  };
+  if (body !== undefined) {
+    init.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, init);
+
+  return parseResponse<T>(response);
+}
+
+/** Multipart upload — do not set Content-Type (browser sets boundary). */
+export async function apiUploadFormData<T>(path: string, formData: FormData): Promise<T> {
+  const headers = new Headers();
+  const token = typeof window !== "undefined" ? getToken() : null;
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers,
+    body: formData,
   });
 
   return parseResponse<T>(response);
+}
+
+export function getApiOrigin() {
+  if (API_BASE_URL) return API_BASE_URL;
+  if (typeof window !== "undefined") return window.location.origin;
+  return "http://localhost:5000";
 }

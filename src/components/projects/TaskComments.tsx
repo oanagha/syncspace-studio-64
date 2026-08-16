@@ -1,16 +1,22 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Pencil, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  ConfirmDeleteDialog,
+} from "@/components/ux/ConfirmDeleteDialog";
 import { getUser } from "@/lib/auth";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { memberAvatarColor, memberInitials } from "@/services/project.service";
 import {
   commentQueryKey,
   createComment,
+  deleteComment,
   formatCommentTime,
   listComments,
+  updateComment,
   type TaskComment,
 } from "@/services/comment.service";
 import { notificationQueryKey } from "@/services/notification.service";
@@ -19,9 +25,19 @@ type TaskCommentsProps = {
   taskId: number;
 };
 
+function canDeleteComment(comment: TaskComment, userId: number | undefined, role?: string | null) {
+  if (!userId) return false;
+  if (comment.user.id === userId) return true;
+  return role === "Owner" || role === "Admin";
+}
+
 export function TaskComments({ taskId }: TaskCommentsProps) {
   const queryClient = useQueryClient();
+  const { activeWorkspace } = useWorkspace();
   const [content, setContent] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<TaskComment | null>(null);
   const user = getUser();
 
   const commentsQuery = useQuery({
@@ -69,6 +85,43 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
     },
   });
 
+  const editMutation = useMutation({
+    mutationFn: ({ commentId, text }: { commentId: number; text: string }) =>
+      updateComment(taskId, commentId, text),
+    onSuccess: (data) => {
+      queryClient.setQueryData<{ comments: TaskComment[] }>(commentQueryKey(taskId), (current) => ({
+        comments: (current?.comments ?? []).map((item) =>
+          item.id === data.comment.id ? data.comment : item,
+        ),
+      }));
+      setEditingId(null);
+      setEditContent("");
+      toast.success("Comment updated");
+      void queryClient.invalidateQueries({ queryKey: commentQueryKey(taskId) });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to update comment.");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (commentId: number) => deleteComment(taskId, commentId),
+    onSuccess: (_data, commentId) => {
+      queryClient.setQueryData<{ comments: TaskComment[] }>(commentQueryKey(taskId), (current) => ({
+        comments: (current?.comments ?? []).filter((item) => item.id !== commentId),
+      }));
+      if (editingId === commentId) {
+        setEditingId(null);
+        setEditContent("");
+      }
+      toast.success("Comment deleted");
+      void queryClient.invalidateQueries({ queryKey: commentQueryKey(taskId) });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to delete comment.");
+    },
+  });
+
   const submit = () => {
     const text = content.trim();
     if (!text) {
@@ -78,6 +131,20 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
     mutation.mutate(text);
   };
 
+  const startEdit = (comment: TaskComment) => {
+    setEditingId(comment.id);
+    setEditContent(comment.content);
+  };
+
+  const saveEdit = (commentId: number) => {
+    const text = editContent.trim();
+    if (!text) {
+      toast.error("Comment cannot be empty");
+      return;
+    }
+    editMutation.mutate({ commentId, text });
+  };
+
   return (
     <div className="space-y-3 border-t border-border pt-4">
       <div className="flex items-center justify-between">
@@ -85,31 +152,116 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
         <span className="text-xs font-semibold text-muted-foreground">{comments.length}</span>
       </div>
 
-      <div className="max-h-48 space-y-3 overflow-y-auto pr-1">
+      <div className="max-h-56 space-y-3 overflow-y-auto pr-1">
         {commentsQuery.isLoading ? (
           <p className="text-xs text-muted-foreground">Loading comments…</p>
         ) : comments.length === 0 ? (
           <p className="text-xs text-muted-foreground">No comments yet. Start the discussion.</p>
         ) : (
-          comments.map((comment) => (
-            <div key={comment.id} className="flex gap-2.5">
-              <span
-                className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-[10px] font-bold text-primary-foreground"
-                style={{ background: memberAvatarColor(comment.user.id) }}
-              >
-                {memberInitials(comment.user.name)}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-2">
-                  <p className="truncate text-xs font-bold">{comment.user.name}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {formatCommentTime(comment.created_at)}
-                  </p>
+          comments.map((comment) => {
+            const isOwn = user?.id === comment.user.id;
+            const canDelete = canDeleteComment(comment, user?.id, activeWorkspace?.role);
+            const isEditing = editingId === comment.id;
+            const deleting =
+              deleteMutation.isPending && deleteMutation.variables === comment.id;
+
+            return (
+              <div key={comment.id} className="flex gap-2.5">
+                <span
+                  className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-[10px] font-bold text-primary-foreground"
+                  style={{ background: memberAvatarColor(comment.user.id) }}
+                >
+                  {memberInitials(comment.user.name)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <p className="truncate text-xs font-bold">{comment.user.name}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {formatCommentTime(comment.created_at)}
+                    </p>
+                  </div>
+
+                  {isEditing ? (
+                    <div className="mt-1.5 space-y-2">
+                      <Textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        rows={2}
+                        maxLength={2000}
+                        className="rounded-2xl"
+                        disabled={editMutation.isPending}
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="hero"
+                          size="sm"
+                          disabled={editMutation.isPending}
+                          onClick={() => saveEdit(comment.id)}
+                        >
+                          {editMutation.isPending ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : null}
+                          {editMutation.isPending ? "Saving…" : "Save"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={editMutation.isPending}
+                          onClick={() => {
+                            setEditingId(null);
+                            setEditContent("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed">
+                        {comment.content}
+                      </p>
+                      {(isOwn || canDelete) && (
+                        <div className="mt-1 flex gap-1">
+                          {isOwn && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                              disabled={editMutation.isPending || deleteMutation.isPending}
+                              onClick={() => startEdit(comment)}
+                            >
+                              <Pencil className="size-3" /> Edit
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+                              disabled={editMutation.isPending || deleteMutation.isPending}
+                              onClick={() => setPendingDelete(comment)}
+                            >
+                              {deleting ? (
+                                <Loader2 className="size-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="size-3" />
+                              )}
+                              Delete
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
-                <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed">{comment.content}</p>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -145,6 +297,23 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
           </Button>
         </div>
       </div>
+
+      <ConfirmDeleteDialog
+        open={Boolean(pendingDelete)}
+        onOpenChange={(next) => {
+          if (!next) setPendingDelete(null);
+        }}
+        title="Delete comment?"
+        description="This comment will be permanently removed. This cannot be undone."
+        confirmLabel="Delete comment"
+        pending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (!pendingDelete) return;
+          deleteMutation.mutate(pendingDelete.id, {
+            onSuccess: () => setPendingDelete(null),
+          });
+        }}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut } from "@/lib/api";
+import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 
 export type ProjectStatus = "On Track" | "At Risk" | "Completed";
 export type ProjectSort = "progress" | "name" | "deadline" | "recent";
@@ -159,4 +159,8 @@ export async function createProject(input: CreateProjectInput) {
 
 export async function updateProject(id: number, input: UpdateProjectInput) {
   return apiPut<{ project: Project }>(`/api/projects/${id}`, input);
+}
+
+export async function deleteProject(id: number) {
+  return apiDelete<{ message: string }>(`/api/projects/${id}`);
 }

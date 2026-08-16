@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut } from "@/lib/api";
+import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 
 export type WorkspaceRole = "Owner" | "Admin" | "Member" | string;
 
@@ -18,6 +18,10 @@ export type ActiveWorkspace = {
 
 export function canRenameWorkspace(role?: WorkspaceRole | null) {
   return role === "Owner" || role === "Admin";
+}
+
+export function canDeleteWorkspace(role?: WorkspaceRole | null) {
+  return role === "Owner";
 }
 
 export function workspaceInitials(name: string) {
@@ -50,4 +54,8 @@ export async function switchWorkspace(workspaceId: number) {
 
 export async function renameWorkspace(id: number, name: string) {
   return apiPut<{ workspace: Workspace }>(`/api/workspaces/${id}`, { name });
+}
+
+export async function deleteWorkspace(id: number) {
+  return apiDelete<{ message: string }>(`/api/workspaces/${id}`);
 }

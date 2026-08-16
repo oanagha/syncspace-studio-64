@@ -39,7 +39,7 @@ export function ProjectFilters({
           className="h-11 rounded-2xl pl-9"
         />
       </div>
-      <Select value={status} onValueChange={onStatusChange} disabled={disabled}>
+      <Select value={status} onValueChange={onStatusChange} disabled={Boolean(disabled)}>
         <SelectTrigger className="h-11 w-full rounded-2xl sm:w-44">
           <SelectValue placeholder="All Status" />
         </SelectTrigger>
@@ -50,7 +50,7 @@ export function ProjectFilters({
           <SelectItem value="Completed">Completed</SelectItem>
         </SelectContent>
       </Select>
-      <Select value={sort} onValueChange={onSortChange} disabled={disabled}>
+      <Select value={sort} onValueChange={onSortChange} disabled={Boolean(disabled)}>
         <SelectTrigger className="h-11 w-full rounded-2xl sm:w-48">
           <SlidersHorizontal className="size-4" />
           <SelectValue placeholder="Sort by Progress" />

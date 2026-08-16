@@ -10,6 +10,10 @@ import { TaskDueDatePicker } from "@/components/board/TaskDueDatePicker";
 import { TaskPriorityPicker } from "@/components/board/TaskPriorityPicker";
 import { AddTaskModal } from "@/components/projects/AddTaskModal";
 import { EditTaskModal } from "@/components/projects/EditTaskModal";
+import {
+  ConfirmDeleteDialog,
+  DeleteEntityName,
+} from "@/components/ux/ConfirmDeleteDialog";
 import { useDeleteTask } from "@/hooks/useDeleteTask";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -56,6 +60,7 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
   const [deletingColumn, setDeletingColumn] = useState<BoardColumn | null>(null);
   const [defaultColumn, setDefaultColumn] = useState("Todo");
   const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
+  const [pendingTaskDelete, setPendingTaskDelete] = useState<ProjectTask | null>(null);
   const deleteTask = useDeleteTask(projectId, () => setEditingTask(null));
 
   const boardQuery = useQuery({
@@ -462,10 +467,7 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
                     onDueDateChange={(dueDate) =>
                       dueDateMutation.mutate({ taskId: t.id, dueDate })
                     }
-                    onDelete={() => {
-                      if (!window.confirm(`Delete “${t.title}”? This cannot be undone.`)) return;
-                      deleteTask.mutate(t.id);
-                    }}
+                    onDelete={() => setPendingTaskDelete(t)}
                   />
                 ))}
 
@@ -528,6 +530,28 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
         open={Boolean(editingTask)}
         onOpenChange={(next) => {
           if (!next) setEditingTask(null);
+        }}
+      />
+      <ConfirmDeleteDialog
+        open={Boolean(pendingTaskDelete)}
+        onOpenChange={(next) => {
+          if (!next) setPendingTaskDelete(null);
+        }}
+        title="Delete task?"
+        description={
+          <>
+            This will permanently remove{" "}
+            <DeleteEntityName>{pendingTaskDelete?.title ?? "this task"}</DeleteEntityName>. This
+            cannot be undone.
+          </>
+        }
+        confirmLabel="Delete task"
+        pending={deleteTask.isPending}
+        onConfirm={() => {
+          if (!pendingTaskDelete) return;
+          deleteTask.mutate(pendingTaskDelete.id, {
+            onSuccess: () => setPendingTaskDelete(null),
+          });
         }}
       />
     </>

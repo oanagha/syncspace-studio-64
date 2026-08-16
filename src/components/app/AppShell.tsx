@@ -1,6 +1,6 @@
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Bell,
@@ -11,7 +11,6 @@ import {
   Plus,
   Search,
   Settings,
-  SquareKanban,
   Users,
   UserPlus,
   CloudUpload,
@@ -44,25 +43,31 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { members, projects } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { clearAuth, getToken, getUser } from "@/lib/auth";
 import {
   formatNotificationTime,
   listNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
   notificationQueryKey,
   type AppNotification,
+  type NotificationsPayload,
 } from "@/services/notification.service";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { WorkspaceSwitcher } from "@/components/workspace/WorkspaceSwitcher";
 import { CreateWorkspaceModal } from "@/components/workspace/CreateWorkspaceModal";
 import { workspaceInitials } from "@/services/workspace.service";
+import { resolveAvatarUrl } from "@/services/settings.service";
+import { getTask } from "@/services/task.service";
+import { listProjects, memberAvatarColor, projectQueryKey } from "@/services/project.service";
+import { listMembers, teamMembersQueryKey } from "@/services/team.service";
+import { ApiRequestError } from "@/lib/api";
 
 const nav = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/app/projects", label: "Projects", icon: FolderKanban, exact: false },
-  { to: "/app/board", label: "Kanban board", icon: SquareKanban, exact: false },
   { to: "/app/team", label: "Team", icon: Users, exact: false },
   { to: "/app/files", label: "Files", icon: Files, exact: false },
   { to: "/app/analytics", label: "Analytics", icon: Gauge, exact: false },
@@ -72,7 +77,6 @@ const nav = [
 const shortcuts = [
   ["⌘ K", "Open command palette"],
   ["⌘ B", "Toggle sidebar"],
-  ["N", "New task on the board"],
   ["G then P", "Go to projects"],
   ["G then A", "Go to analytics"],
   ["?", "Show this dialog"],
@@ -90,6 +94,7 @@ export function AppShell() {
   const user = getUser();
   const userName = preferences.fullName || user?.name || "Account";
   const userEmail = preferences.email || user?.email || "";
+  const avatarSrc = resolveAvatarUrl(preferences.avatarUrl ?? user?.avatarUrl ?? null);
   const queryClient = useQueryClient();
   const notificationsEnabled = preferences.notifications;
   const notificationsQuery = useQuery({
@@ -99,6 +104,102 @@ export function AppShell() {
     refetchOnWindowFocus: true,
   });
   const notes = notificationsQuery.data?.notifications ?? [];
+  const workspaceId = activeWorkspace?.id ?? null;
+
+  const paletteProjectsQuery = useQuery({
+    queryKey: projectQueryKey(workspaceId, "", "all", "recent"),
+    queryFn: () =>
+      listProjects({
+        workspaceId: workspaceId!,
+        search: "",
+        status: "all",
+        sort: "recent",
+      }),
+    enabled: Boolean(getToken()) && Number.isInteger(workspaceId) && (workspaceId ?? 0) > 0 && cmdOpen,
+  });
+
+  const paletteMembersQuery = useQuery({
+    queryKey: teamMembersQueryKey(workspaceId),
+    queryFn: () => listMembers(workspaceId!),
+    enabled: Boolean(getToken()) && Number.isInteger(workspaceId) && (workspaceId ?? 0) > 0 && cmdOpen,
+  });
+
+  const paletteProjects = paletteProjectsQuery.data?.projects ?? [];
+  const paletteMembers = paletteMembersQuery.data?.members ?? [];
+
+  const patchNotificationCache = useCallback(
+    (updater: (current: NotificationsPayload) => NotificationsPayload) => {
+      queryClient.setQueryData(notificationQueryKey(), (current: NotificationsPayload | undefined) => {
+        if (!current) return current;
+        return updater(current);
+      });
+    },
+    [queryClient],
+  );
+
+  const markOneMutation = useMutation({
+    mutationFn: (notification: AppNotification) => markNotificationRead(notification.id),
+    onSuccess: (data, notification) => {
+      patchNotificationCache((current) => {
+        const notifications = current.notifications.map((item) =>
+          item.id === notification.id
+            ? { ...item, unread: false, read_at: data.notification.read_at }
+            : item,
+        );
+        return {
+          notifications,
+          unread_count: notifications.filter((item) => item.unread).length,
+        };
+      });
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to mark as read.");
+    },
+  });
+
+  const markAllMutation = useMutation({
+    mutationFn: markAllNotificationsRead,
+    onSuccess: () => {
+      patchNotificationCache((current) => ({
+        unread_count: 0,
+        notifications: current.notifications.map((item) => ({
+          ...item,
+          unread: false,
+          read_at: item.read_at || new Date().toISOString(),
+        })),
+      }));
+      toast.success("All notifications marked as read");
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiRequestError || err instanceof Error ? err.message : "Failed to mark all as read.");
+    },
+  });
+
+  const openNotification = async (notification: AppNotification) => {
+    if (notification.unread && markOneMutation.isPending) return;
+
+    try {
+      if (notification.unread) {
+        await markOneMutation.mutateAsync(notification);
+      }
+
+      let projectId = notification.project_id ?? null;
+      if (!projectId && notification.task_id) {
+        const { task } = await getTask(notification.task_id);
+        projectId = task.project_id;
+      }
+
+      if (projectId) {
+        navigate({
+          to: "/app/projects/$id/board",
+          params: { id: String(projectId) },
+        });
+      }
+    } catch (err) {
+      if (err instanceof ApiRequestError) return;
+      toast.error(err instanceof Error ? err.message : "Failed to open notification.");
+    }
+  };
   const userInitials = workspaceInitials(userName);
 
   useEffect(() => {
@@ -239,25 +340,13 @@ export function AppShell() {
                   <p className="text-sm font-bold">Notifications</p>
                   <button
                     onClick={() => {
-                      queryClient.setQueryData(notificationQueryKey(), (current: {
-                        notifications: AppNotification[];
-                        unread_count: number;
-                      } | undefined) => {
-                        if (!current) return current;
-                        return {
-                          unread_count: 0,
-                          notifications: current.notifications.map((item) => ({
-                            ...item,
-                            unread: false,
-                          })),
-                        };
-                      });
-                      toast.success("All notifications marked as read");
+                      if (markAllMutation.isPending || unread === 0) return;
+                      markAllMutation.mutate();
                     }}
-                    className="text-xs font-semibold text-primary hover:underline"
-                    disabled={unread === 0}
+                    className="text-xs font-semibold text-primary hover:underline disabled:opacity-50"
+                    disabled={unread === 0 || markAllMutation.isPending}
                   >
-                    Mark all read
+                    {markAllMutation.isPending ? "Marking…" : "Mark all read"}
                   </button>
                 </div>
                 <div className="max-h-[380px] overflow-y-auto border-t border-border">
@@ -277,22 +366,12 @@ export function AppShell() {
                     notes.map((n, i) => (
                       <button
                         key={n.id}
-                        onClick={() =>
-                          queryClient.setQueryData(notificationQueryKey(), (current: {
-                            notifications: AppNotification[];
-                            unread_count: number;
-                          } | undefined) => {
-                            if (!current) return current;
-                            const notifications = current.notifications.map((item) =>
-                              item.id === n.id ? { ...item, unread: false } : item,
-                            );
-                            return {
-                              notifications,
-                              unread_count: notifications.filter((item) => item.unread).length,
-                            };
-                          })
-                        }
-                        className="flex w-full gap-3 border-b border-border px-4 py-3 text-left last:border-0 hover:bg-muted/50"
+                        type="button"
+                        onClick={() => {
+                          void openNotification(n);
+                        }}
+                        disabled={markOneMutation.isPending && markOneMutation.variables?.id === n.id}
+                        className="flex w-full gap-3 border-b border-border px-4 py-3 text-left last:border-0 hover:bg-muted/50 disabled:opacity-60"
                         style={{ animation: `slide-in-right .35s cubic-bezier(.22,1,.36,1) ${i * 60}ms both` }}
                       >
                         <span
@@ -319,10 +398,14 @@ export function AppShell() {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 rounded-2xl p-1 pr-2 transition-colors hover:bg-muted">
                   <span
-                    className="grid size-8 place-items-center rounded-xl text-xs font-bold text-primary-foreground"
-                    style={{ background: members[0]!.color }}
+                    className="grid size-8 place-items-center overflow-hidden rounded-xl text-xs font-bold text-primary-foreground"
+                    style={{
+                      background: avatarSrc
+                        ? `center / cover url(${avatarSrc})`
+                        : memberAvatarColor(user?.id ?? 0),
+                    }}
                   >
-                    {userInitials}
+                    {!avatarSrc && userInitials}
                   </span>
                   <span className="hidden text-sm font-semibold sm:inline">{userName.split(" ")[0]}</span>
                 </button>
@@ -410,11 +493,6 @@ export function AppShell() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="gap-2 rounded-xl">
-              <Link to="/app/board">
-                <SquareKanban className="size-4" /> New task
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild className="gap-2 rounded-xl">
               <Link to="/app/team">
                 <UserPlus className="size-4" /> Invite teammate
               </Link>
@@ -450,15 +528,29 @@ export function AppShell() {
             ))}
           </CommandGroup>
           <CommandGroup heading="Projects">
-            {projects.slice(0, 4).map((p) => (
-              <CommandItem key={p.id} value={p.name} onSelect={() => go("/app/projects")}>
-                {p.name}
+            {paletteProjects.slice(0, 6).map((p) => (
+              <CommandItem
+                key={p.id}
+                value={p.title}
+                onSelect={() => {
+                  setCmdOpen(false);
+                  navigate({ to: "/app/projects/$id", params: { id: String(p.id) } });
+                }}
+              >
+                {p.title}
               </CommandItem>
             ))}
           </CommandGroup>
           <CommandGroup heading="People">
-            {members.slice(0, 4).map((m) => (
-              <CommandItem key={m.id} value={m.name} onSelect={() => go("/app/team")}>
+            {paletteMembers.slice(0, 6).map((m) => (
+              <CommandItem
+                key={m.id}
+                value={m.name}
+                onSelect={() => {
+                  setCmdOpen(false);
+                  navigate({ to: "/app/team" });
+                }}
+              >
                 {m.name}
               </CommandItem>
             ))}

@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { updateStoredUser } from "@/lib/auth";
 import {
   ACCENTS,
   DEFAULT_PREFERENCES,
@@ -37,6 +38,7 @@ type PreferencesContextValue = {
   loading: boolean;
   saving: boolean;
   updatePreferences: (patch: PreferencesPatch) => Promise<UserPreferences>;
+  replacePreferences: (next: UserPreferences) => UserPreferences;
 };
 
 export const PreferencesContext = createContext<PreferencesContextValue | null>(null);
@@ -75,7 +77,7 @@ function asWorkspaceId(value: unknown): number | null {
 
 function parsePreferences(value: unknown): UserPreferences | null {
   if (!value || typeof value !== "object") return null;
-  const raw = value as Record<string, unknown>;
+  const raw = value as Partial<UserPreferences>;
   if (!isTheme(raw.theme) || !isLanguage(raw.language) || !isSidebar(raw.sidebar)) {
     return null;
   }
@@ -105,6 +107,7 @@ function parsePreferences(value: unknown): UserPreferences | null {
     jobTitle: asString(raw.jobTitle, DEFAULT_PREFERENCES.jobTitle),
     timezone: asString(raw.timezone, DEFAULT_PREFERENCES.timezone),
     bio: asString(raw.bio, DEFAULT_PREFERENCES.bio),
+    avatarUrl: typeof raw.avatarUrl === "string" && raw.avatarUrl.trim() ? raw.avatarUrl : null,
     workspaceId: asWorkspaceId(raw.workspaceId),
     workspaceName: asString(raw.workspaceName, DEFAULT_PREFERENCES.workspaceName),
     guestAccess: asBoolean(raw.guestAccess, DEFAULT_PREFERENCES.guestAccess),
@@ -186,12 +189,21 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       try {
-        const { preferences: next } = await getPreferences(workspaceId);
+        const { preferences: next, user } = await getPreferences(workspaceId);
         if (cancelled) return;
         const merged = normalizePreferences(next, preferences);
         setPreferences(merged);
         cachePreferences(merged);
         queryClient.setQueryData(preferencesQueryKey(workspaceId), { preferences: merged });
+        if (user) {
+          updateStoredUser({
+            name: user.name,
+            email: user.email,
+            avatarUrl: user.avatarUrl,
+          });
+        } else if (merged.avatarUrl !== undefined) {
+          updateStoredUser({ avatarUrl: merged.avatarUrl });
+        }
       } catch (err) {
         console.error("Failed to load preferences:", err);
       } finally {
@@ -210,7 +222,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     async (patch: PreferencesPatch) => {
       setSaving(true);
       try {
-        const { preferences: next } = await updatePreferencesRequest({
+        const { preferences: next, user } = await updatePreferencesRequest({
           ...patch,
           ...(workspaceId && patch.workspaceId === undefined ? { workspaceId } : {}),
         });
@@ -218,6 +230,13 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         setPreferences(merged);
         cachePreferences(merged);
         queryClient.setQueryData(preferencesQueryKey(workspaceId), { preferences: merged });
+        if (user) {
+          updateStoredUser({
+            name: user.name,
+            email: user.email,
+            avatarUrl: user.avatarUrl,
+          });
+        }
         return merged;
       } finally {
         setSaving(false);
@@ -226,14 +245,31 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     [queryClient, workspaceId, preferences],
   );
 
+  const replacePreferences = useCallback(
+    (next: UserPreferences) => {
+      const merged = normalizePreferences(next, preferences);
+      setPreferences(merged);
+      cachePreferences(merged);
+      queryClient.setQueryData(preferencesQueryKey(workspaceId), { preferences: merged });
+      updateStoredUser({
+        ...(merged.fullName ? { name: merged.fullName } : {}),
+        ...(merged.email ? { email: merged.email } : {}),
+        avatarUrl: merged.avatarUrl,
+      });
+      return merged;
+    },
+    [preferences, queryClient, workspaceId],
+  );
+
   const value = useMemo<PreferencesContextValue>(
     () => ({
       preferences,
       loading,
       saving,
       updatePreferences,
+      replacePreferences,
     }),
-    [preferences, loading, saving, updatePreferences],
+    [preferences, loading, saving, updatePreferences, replacePreferences],
   );
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;

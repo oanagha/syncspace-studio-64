@@ -21,8 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TaskAttachments } from "@/components/projects/TaskAttachments";
 import { TaskComments } from "@/components/projects/TaskComments";
 import { TaskSubtasks } from "@/components/projects/TaskSubtasks";
+import {
+  ConfirmDeleteDialog,
+  DeleteEntityName,
+} from "@/components/ux/ConfirmDeleteDialog";
 import { useDeleteTask } from "@/hooks/useDeleteTask";
 import { columnQueryKey, columnTitle, listColumns } from "@/services/column.service";
 import { getProject, projectDetailQueryKey } from "@/services/project.service";
@@ -50,6 +55,7 @@ export function EditTaskModal({ task: initialTask, open, onOpenChange }: EditTas
   const [priority, setPriority] = useState("Medium");
   const [dueDate, setDueDate] = useState("");
   const [assigneeId, setAssigneeId] = useState("none");
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const taskQuery = useQuery({
     queryKey: taskDetailQueryKey(initialTask?.id ?? 0),
@@ -305,6 +311,9 @@ export function EditTaskModal({ task: initialTask, open, onOpenChange }: EditTas
             </div>
           </div>
           {task?.id ? <TaskSubtasks taskId={task.id} projectId={task.project_id} /> : null}
+          {task?.id ? (
+            <TaskAttachments taskId={task.id} projectId={task.project_id} />
+          ) : null}
           {task?.id ? <TaskComments taskId={task.id} /> : null}
         </div>
         <DialogFooter className="gap-2 sm:justify-between">
@@ -312,11 +321,7 @@ export function EditTaskModal({ task: initialTask, open, onOpenChange }: EditTas
             variant="ghost"
             className="text-destructive hover:text-destructive"
             disabled={mutation.isPending || deleteMutation.isPending || !task}
-            onClick={() => {
-              if (!task) return;
-              if (!window.confirm(`Delete “${task.title}”? This cannot be undone.`)) return;
-              deleteMutation.mutate(task.id);
-            }}
+            onClick={() => setDeleteOpen(true)}
           >
             {deleteMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />}
             {deleteMutation.isPending ? "Deleting..." : "Delete"}
@@ -332,6 +337,25 @@ export function EditTaskModal({ task: initialTask, open, onOpenChange }: EditTas
           </Button>
         </DialogFooter>
       </DialogContent>
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete task?"
+        description={
+          <>
+            This will permanently remove <DeleteEntityName>{task?.title ?? "this task"}</DeleteEntityName>{" "}
+            and its comments, subtasks, and attachments. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete task"
+        pending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (!task) return;
+          deleteMutation.mutate(task.id, {
+            onSuccess: () => setDeleteOpen(false),
+          });
+        }}
+      />
     </Dialog>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ import {
 } from "@/services/column.service";
 import { projectDetailQueryKey } from "@/services/project.service";
 import { taskQueryKey, type ProjectTask } from "@/services/task.service";
+import { cn } from "@/lib/utils";
 
 type DeleteColumnModalProps = {
   projectId: number;
@@ -99,6 +100,8 @@ export function DeleteColumnModal({
     },
   });
 
+  const title = column ? columnTitle(column) : "this column";
+
   return (
     <Dialog
       open={open}
@@ -107,17 +110,33 @@ export function DeleteColumnModal({
         onOpenChange(next);
       }}
     >
-      <DialogContent className="rounded-3xl sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Delete column</DialogTitle>
-          <DialogDescription>
-            {taskCount > 0
-              ? `“${column ? columnTitle(column) : "This column"}” has ${taskCount} task${taskCount === 1 ? "" : "s"}. Move them to another column to keep them.`
-              : `Delete “${column ? columnTitle(column) : "this column"}”? This cannot be undone.`}
-          </DialogDescription>
-        </DialogHeader>
-        {taskCount > 0 && (
+      <DialogContent className="gap-0 overflow-hidden border-border/70 p-0 shadow-2xl sm:max-w-md sm:rounded-3xl">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-destructive/[0.08] to-transparent" />
+
+        <DialogHeader className="relative space-y-4 px-6 pb-2 pt-6 text-left">
+          <div className="flex size-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive ring-1 ring-destructive/15">
+            <Trash2 className="size-5" strokeWidth={2.25} />
+          </div>
           <div className="space-y-2">
+            <DialogTitle className="text-xl font-bold tracking-tight">Delete column?</DialogTitle>
+            <DialogDescription className="text-[0.95rem] leading-relaxed">
+              {taskCount > 0 ? (
+                <>
+                  <span className="font-semibold text-foreground">“{title}”</span> has {taskCount}{" "}
+                  task{taskCount === 1 ? "" : "s"}. Choose where to move them before deleting.
+                </>
+              ) : (
+                <>
+                  Delete <span className="font-semibold text-foreground">“{title}”</span>? This
+                  cannot be undone.
+                </>
+              )}
+            </DialogDescription>
+          </div>
+        </DialogHeader>
+
+        {taskCount > 0 && (
+          <div className="relative space-y-2 px-6 pb-2">
             <Label>Move tasks to</Label>
             <Select value={moveToColumnId} onValueChange={setMoveToColumnId}>
               <SelectTrigger className="h-11 rounded-2xl">
@@ -133,18 +152,29 @@ export function DeleteColumnModal({
             </Select>
           </div>
         )}
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={mutation.isPending}>
+
+        <DialogFooter
+          className={cn(
+            "relative gap-2 border-t border-border/60 bg-muted/30 px-6 py-4 sm:space-x-0",
+          )}
+        >
+          <Button
+            variant="outline"
+            className="h-11 rounded-2xl"
+            onClick={() => onOpenChange(false)}
+            disabled={mutation.isPending}
+          >
             Cancel
           </Button>
           <Button
             variant="destructive"
+            className="h-11 rounded-2xl"
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending || !column || columns.length <= 1}
           >
             {mutation.isPending ? (
               <>
-                <Loader2 className="size-4 animate-spin" /> Deleting…
+                <Loader2 className="size-4 animate-spin" /> Working…
               </>
             ) : (
               "Delete column"
