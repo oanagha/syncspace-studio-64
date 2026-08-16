@@ -13,6 +13,14 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -40,6 +48,12 @@ import {
   type ThemePreference,
   type UserPreferences,
 } from "@/services/settings.service";
+import {
+  disableTwoFactor,
+  enableTwoFactor,
+  setupTwoFactor,
+  type TwoFactorSetup,
+} from "@/services/twofactor.service";
 
 const tabs = [
   { v: "profile", label: "Profile", icon: User },
@@ -96,6 +110,13 @@ function SettingsPage() {
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [removeAvatarOpen, setRemoveAvatarOpen] = useState(false);
   const [deleteWorkspaceOpen, setDeleteWorkspaceOpen] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [disableOpen, setDisableOpen] = useState(false);
+  const [setupData, setSetupData] = useState<TwoFactorSetup | null>(null);
+  const [totpCode, setTotpCode] = useState("");
+  const [disablePassword, setDisablePassword] = useState("");
+  const [disableCode, setDisableCode] = useState("");
+  const [twoFactorBusy, setTwoFactorBusy] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const canEditWorkspace = canRenameWorkspace(activeWorkspace?.role);
   const canRemoveWorkspace = canDeleteWorkspace(activeWorkspace?.role);
@@ -340,15 +361,53 @@ function SettingsPage() {
               />
             </div>
             <Separator />
-            <Toggle
-              label="Two-factor authentication"
-              desc="Require a 6-digit code from your authenticator app."
-              checked={draft.twoFactor}
-              onCheckedChange={(twoFactor) => setDraft((current) => ({ ...current, twoFactor }))}
-            />
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-sm font-bold">Two-factor authentication</p>
+                <p className="text-sm text-muted-foreground">
+                  {draft.twoFactor
+                    ? "Enabled — you’ll need an authenticator code when signing in."
+                    : "Add an authenticator app for a 6-digit code at sign-in."}
+                </p>
+              </div>
+              {draft.twoFactor ? (
+                <Button
+                  variant="outline"
+                  disabled={twoFactorBusy || loading}
+                  onClick={() => {
+                    setDisablePassword("");
+                    setDisableCode("");
+                    setDisableOpen(true);
+                  }}
+                >
+                  Disable 2FA
+                </Button>
+              ) : (
+                <Button
+                  variant="hero"
+                  disabled={twoFactorBusy || loading}
+                  onClick={async () => {
+                    setTwoFactorBusy(true);
+                    try {
+                      const setup = await setupTwoFactor();
+                      setSetupData(setup);
+                      setTotpCode("");
+                      setSetupOpen(true);
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Could not start 2FA setup.");
+                    } finally {
+                      setTwoFactorBusy(false);
+                    }
+                  }}
+                >
+                  {twoFactorBusy ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Enable 2FA
+                </Button>
+              )}
+            </div>
             <Toggle
               label="Login alerts"
-              desc="Email me when a new device signs in."
+              desc="Email me when a new device or location signs in."
               checked={draft.loginAlerts}
               onCheckedChange={(loginAlerts) => setDraft((current) => ({ ...current, loginAlerts }))}
             />
@@ -377,7 +436,6 @@ function SettingsPage() {
               }}
               onSave={async () => {
                 const patch: PreferencesPatch = {
-                  twoFactor: draft.twoFactor,
                   loginAlerts: draft.loginAlerts,
                 };
                 if (currentPassword || newPassword) {
@@ -392,6 +450,157 @@ function SettingsPage() {
               }}
             />
           </Card>
+
+          <Dialog
+            open={setupOpen}
+            onOpenChange={(open) => {
+              setSetupOpen(open);
+              if (!open) {
+                setSetupData(null);
+                setTotpCode("");
+              }
+            }}
+          >
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Set up authenticator</DialogTitle>
+                <DialogDescription>
+                  Scan the QR code with Google Authenticator, Authy, or 1Password, then enter the 6-digit code.
+                </DialogDescription>
+              </DialogHeader>
+              {setupData ? (
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <img
+                      src={setupData.qrUrl}
+                      alt="2FA QR code"
+                      className="size-48 rounded-xl border border-border bg-white p-2"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Manual secret
+                    </p>
+                    <code className="block break-all rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs">
+                      {setupData.secret}
+                    </code>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="setup-totp">Verification code</Label>
+                    <Input
+                      id="setup-totp"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      placeholder="123456"
+                      className="h-11 rounded-2xl tracking-[0.3em] text-center"
+                      value={totpCode}
+                      onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    />
+                  </div>
+                </div>
+              ) : null}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setSetupOpen(false)} disabled={twoFactorBusy}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="hero"
+                  disabled={twoFactorBusy || !/^\d{6}$/.test(totpCode)}
+                  onClick={async () => {
+                    setTwoFactorBusy(true);
+                    try {
+                      await enableTwoFactor(totpCode);
+                      setDraft((current) => ({ ...current, twoFactor: true }));
+                      replacePreferences({ ...preferences, ...draft, twoFactor: true });
+                      toast.success("Two-factor authentication enabled");
+                      setSetupOpen(false);
+                      setSetupData(null);
+                      setTotpCode("");
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Could not enable 2FA.");
+                    } finally {
+                      setTwoFactorBusy(false);
+                    }
+                  }}
+                >
+                  {twoFactorBusy ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Confirm & enable
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog
+            open={disableOpen}
+            onOpenChange={(open) => {
+              setDisableOpen(open);
+              if (!open) {
+                setDisablePassword("");
+                setDisableCode("");
+              }
+            }}
+          >
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Disable two-factor authentication</DialogTitle>
+                <DialogDescription>
+                  Confirm with your password and a current authenticator code.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="disable-password">Password</Label>
+                  <Input
+                    id="disable-password"
+                    type="password"
+                    className="h-11 rounded-2xl"
+                    value={disablePassword}
+                    onChange={(e) => setDisablePassword(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="disable-totp">Authenticator code</Label>
+                  <Input
+                    id="disable-totp"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="123456"
+                    className="h-11 rounded-2xl tracking-[0.3em] text-center"
+                    value={disableCode}
+                    onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDisableOpen(false)} disabled={twoFactorBusy}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  disabled={twoFactorBusy || !disablePassword || !/^\d{6}$/.test(disableCode)}
+                  onClick={async () => {
+                    setTwoFactorBusy(true);
+                    try {
+                      await disableTwoFactor(disablePassword, disableCode);
+                      setDraft((current) => ({ ...current, twoFactor: false }));
+                      replacePreferences({ ...preferences, ...draft, twoFactor: false });
+                      toast.success("Two-factor authentication disabled");
+                      setDisableOpen(false);
+                      setDisablePassword("");
+                      setDisableCode("");
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Could not disable 2FA.");
+                    } finally {
+                      setTwoFactorBusy(false);
+                    }
+                  }}
+                >
+                  {twoFactorBusy ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Disable 2FA
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="notifications">
@@ -537,7 +746,7 @@ function SettingsPage() {
             />
             <Toggle
               label="Require 2FA for all members"
-              desc="Enforced on next sign-in."
+              desc="Policy reminder for the workspace. Each member enables 2FA from Security settings."
               checked={draft.require2fa}
               onCheckedChange={(require2fa) => setDraft((current) => ({ ...current, require2fa }))}
               disabled={!canEditWorkspace}

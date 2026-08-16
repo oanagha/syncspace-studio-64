@@ -70,7 +70,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   notifyDueDates: true,
   notifyFiles: false,
   notifyDigest: true,
-  twoFactor: true,
+  twoFactor: false,
   loginAlerts: true,
   slack: true,
   github: true,

@@ -59,6 +59,10 @@ function ContactPage() {
     setSubmitting(true);
     try {
       await apiPost<{ message: string }>("/api/contact", payload);
+      setName("");
+      setEmail("");
+      setSubject("");
+      setMessage("");
       setSent(true);
     } catch (err) {
       toast.error(
@@ -148,8 +152,8 @@ function ContactPage() {
                     {submitting ? "Sending…" : "Send message"}
                   </Button>
                   {sent && (
-                    <span className="animate-pop text-sm font-semibold text-primary">
-                      Thanks — we'll get back to you shortly.
+                    <span className="text-sm font-semibold text-primary">
+                      Thanks — check your inbox for a confirmation. We’ll get back to you shortly.
                     </span>
                   )}
                 </div>
