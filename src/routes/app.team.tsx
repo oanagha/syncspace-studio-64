@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, Mail, MoreHorizontal, Shield, UserPlus, X } from "lucide-react";
@@ -23,6 +23,7 @@ import {
 import { AnimatedBar } from "@/components/ux/motion";
 import { ConfirmDeleteDialog, DeleteEntityName } from "@/components/ux/ConfirmDeleteDialog";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { usePreferences } from "@/hooks/usePreferences";
 import { memberAvatarColor } from "@/services/project.service";
 import {
   acceptInvitation,
@@ -57,13 +58,14 @@ export const Route = createFileRoute("/app/team")({
 });
 
 const permissions = [
-  ["Create & delete projects", true, true, false],
-  ["Invite members", true, true, false],
-  ["Manage billing", true, false, false],
-  ["Edit tasks & boards", true, true, true],
-  ["Upload files", true, true, true],
-  ["View analytics", true, true, true],
-  ["Manage SSO & audit logs", true, false, false],
+  ["Create & delete projects", true, true, false, false],
+  ["Invite members", true, true, false, false],
+  ["Manage billing", true, false, false, false],
+  ["Edit tasks & boards", true, true, true, false],
+  ["Comment on tasks", true, true, true, true],
+  ["Upload files", true, true, true, false],
+  ["View analytics", true, true, true, false],
+  ["Manage SSO & audit logs", true, false, false, false],
 ] as const;
 
 const palette = ["#1A4A6E", "#2D8A9E", "#5CBDB9", "#2F9E7D", "#D9A441", "#E07A5F"];
@@ -71,6 +73,7 @@ const palette = ["#1A4A6E", "#2D8A9E", "#5CBDB9", "#2F9E7D", "#D9A441", "#E07A5F
 function TeamPage() {
   const queryClient = useQueryClient();
   const { activeWorkspace, fetchWorkspaces, switchWorkspace } = useWorkspace();
+  const { preferences } = usePreferences();
   const [emails, setEmails] = useState("");
   const [pendingRemove, setPendingRemove] = useState<{ userId: number; name: string } | null>(null);
   const [acceptedInviteIds, setAcceptedInviteIds] = useState<number[]>([]);
@@ -78,11 +81,16 @@ function TeamPage() {
     { id: number; workspace_name: string; role: string }[]
   >([]);
   const workspaceName = activeWorkspace?.name || "this workspace";
+  const guestsAllowed = preferences.guestAccess;
   const [role, setRole] = useState("Member");
   const currentUser = getUser();
   const currentEmail = (currentUser?.email || "").toLowerCase();
   const canManage = canManageTeam(activeWorkspace?.role);
   const isOwner = activeWorkspace?.role === "Owner";
+
+  useEffect(() => {
+    if (!guestsAllowed && role === "Guest") setRole("Member");
+  }, [guestsAllowed, role]);
 
   const invitesQuery = useQuery({
     queryKey: invitationQueryKey(activeWorkspace?.id),
@@ -388,6 +396,7 @@ function TeamPage() {
             <SelectContent>
               {isOwner ? <SelectItem value="Admin">Admin</SelectItem> : null}
               <SelectItem value="Member">Member</SelectItem>
+              {guestsAllowed ? <SelectItem value="Guest">Guest</SelectItem> : null}
             </SelectContent>
           </Select>
           <Button
@@ -466,7 +475,11 @@ function TeamPage() {
             const busy =
               (changeRoleMutation.isPending && changeRoleMutation.variables?.userId === m.id) ||
               (removeMutation.isPending && removeMutation.variables?.userId === m.id);
-            const roleOptions = ["Admin", "Member"].filter((r) => r !== m.role);
+            const roleOptions = [
+              ...(isOwner ? ["Admin"] : []),
+              "Member",
+              ...(guestsAllowed ? ["Guest"] : []),
+            ].filter((r) => r !== m.role);
             const canActOnMember =
               canManage &&
               m.role !== "Owner" &&
@@ -568,13 +581,14 @@ function TeamPage() {
               <th className="pb-3 font-bold">Owner</th>
               <th className="pb-3 font-bold">Admin</th>
               <th className="pb-3 font-bold">Member</th>
+              <th className="pb-3 font-bold">Guest</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {permissions.map(([cap, o, a, mm]) => (
+            {permissions.map(([cap, o, a, mm, g]) => (
               <tr key={cap as string}>
                 <td className="py-3 pr-4 font-medium">{cap}</td>
-                {[o, a, mm].map((v, idx) => (
+                {[o, a, mm, g].map((v, idx) => (
                   <td key={idx} className="py-3">
                     <span
                       className={

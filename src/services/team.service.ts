@@ -1,7 +1,7 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 
-export type TeamRole = "Admin" | "Member";
-export type MemberRole = "Owner" | "Admin" | "Member";
+export type TeamRole = "Admin" | "Member" | "Guest";
+export type MemberRole = "Owner" | "Admin" | "Member" | "Guest";
 
 export type TeamInvitation = {
   id: number;

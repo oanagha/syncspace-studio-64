@@ -11,6 +11,7 @@ import {
   Plus,
   Search,
   Settings,
+  Shield,
   Users,
   UserPlus,
   CloudUpload,
@@ -232,6 +233,13 @@ export function AppShell() {
 
   const unread = notificationsQuery.data?.unread_count ?? notes.filter((n) => n.unread).length;
   const isProjectDetail = /^\/app\/projects\/[^/]+/.test(pathname);
+  const mustEnroll2fa = preferences.require2fa && !preferences.twoFactor;
+
+  useEffect(() => {
+    if (!mustEnroll2fa) return;
+    if (pathname.startsWith("/app/settings")) return;
+    void navigate({ to: "/app/settings", search: { tab: "security" } });
+  }, [mustEnroll2fa, navigate, pathname]);
 
   const go = (to: string) => {
     setCmdOpen(false);
@@ -446,6 +454,24 @@ export function AppShell() {
           className="px-4 pb-28 pt-6 sm:px-6 lg:px-8"
           style={{ animation: "fade-up .22s cubic-bezier(.22,1,.36,1) both" }}
         >
+          {mustEnroll2fa ? (
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3">
+              <div className="flex min-w-0 items-start gap-3">
+                <Shield className="mt-0.5 size-4 shrink-0 text-warning" />
+                <div className="min-w-0">
+                  <p className="text-sm font-bold">Two-factor authentication required</p>
+                  <p className="text-xs text-muted-foreground">
+                    Enable 2FA to keep using this workspace.
+                  </p>
+                </div>
+              </div>
+              <Button variant="hero" size="sm" asChild>
+                <Link to="/app/settings" search={{ tab: "security" }}>
+                  Enable 2FA
+                </Link>
+              </Button>
+            </div>
+          ) : null}
           <Outlet />
         </main>
       </div>
