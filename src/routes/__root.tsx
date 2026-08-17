@@ -7,12 +7,16 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "../components/ui/sonner";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 import { appearanceBootScript } from "../lib/appearance-boot";
+
+const FAVICON_SVG = encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><linearGradient id="g" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse"><stop stop-color="#1A4A6E"/><stop offset=".45" stop-color="#1A4A6E"/><stop offset="1" stop-color="#5CBDB9"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#g)"/><path d="M16 6.4 24.2 10.8v10.4L16 25.6 7.8 21.2V10.8L16 6.4Z" fill="none" stroke="#fff" stroke-width="1.7" stroke-linejoin="round" opacity=".9"/><circle cx="16" cy="16" r="3.15" fill="#fff"/></svg>`,
+);
+const FAVICON_HREF = `data:image/svg+xml,${FAVICON_SVG}`;
 
 function NotFoundComponent() {
   return (
@@ -39,9 +43,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -79,14 +80,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "SyncSpace — Real-time Collaborative Workspace" },
+      {
+        name: "description",
+        content:
+          "SyncSpace unites boards, docs, files and analytics in one realtime workspace for teams, freelancers and startups.",
+      },
+      { name: "author", content: "SyncSpace" },
+      { property: "og:title", content: "SyncSpace — Real-time Collaborative Workspace" },
+      {
+        property: "og:description",
+        content:
+          "Boards, docs, files and analytics in one realtime workspace. Ship faster with your whole team in the same room.",
+      },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:card", content: "summary" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -99,7 +107,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: FAVICON_HREF, type: "image/svg+xml" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
     ],
   }),
   shellComponent: RootShell,
@@ -113,6 +122,8 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en" className="reduce-motion" data-accent="ocean" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: appearanceBootScript }} />
+        <link rel="icon" href={FAVICON_HREF} type="image/svg+xml" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <HeadContent />
       </head>
       <body>
