@@ -31,6 +31,8 @@ import {
 import { columnQueryKey, columnTitle, listColumns } from "@/services/column.service";
 import { getProject, projectDetailQueryKey } from "@/services/project.service";
 import { boardQueryKey, type BoardPayload } from "@/services/board.service";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { canEditWorkspaceContent } from "@/services/workspace.service";
 
 type AddTaskModalProps = {
   projectId: number;
@@ -50,6 +52,8 @@ export function AddTaskModal({
   showIcon = true,
 }: AddTaskModalProps) {
   const queryClient = useQueryClient();
+  const { activeWorkspace } = useWorkspace();
+  const canEdit = canEditWorkspaceContent(activeWorkspace?.role);
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const open = controlledOpen ?? uncontrolledOpen;
   const setOpen = onOpenChange ?? setUncontrolledOpen;
@@ -144,6 +148,10 @@ export function AddTaskModal({
   });
 
   const submit = () => {
+    if (!canEdit) {
+      toast.error("Guests can view and comment only.");
+      return;
+    }
     const trimmed = title.trim();
     if (!trimmed) {
       toast.error("Task title is required");
@@ -167,7 +175,7 @@ export function AddTaskModal({
     >
       {showTrigger && (
         <DialogTrigger asChild>
-          <Button variant="hero">{showIcon && <Plus />} Add task</Button>
+          <Button variant="hero" disabled={!canEdit}>{showIcon && <Plus />} Add task</Button>
         </DialogTrigger>
       )}
       <DialogContent className="rounded-3xl sm:max-w-lg">

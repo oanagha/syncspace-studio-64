@@ -16,8 +16,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { usePreferences } from "@/hooks/usePreferences";
+import { canEditWorkspaceContent } from "@/services/workspace.service";
 import { createProject, PROJECT_COLORS } from "@/services/project.service";
 import { cn } from "@/lib/utils";
+
+const STARTER_TEMPLATES = [
+  { id: "blank", name: "Blank", description: "" },
+  { id: "marketing", name: "Marketing campaign", description: "Briefs, assets, and a launch checklist." },
+  { id: "sprint", name: "Sprint board", description: "Two-week sprint with backlog through review." },
+] as const;
 
 type CreateProjectModalProps = {
   disabled?: boolean;
@@ -26,17 +34,30 @@ type CreateProjectModalProps = {
 export function CreateProjectModal({ disabled }: CreateProjectModalProps) {
   const queryClient = useQueryClient();
   const { activeWorkspace } = useWorkspace();
+  const { preferences } = usePreferences();
+  const canCreate = canEditWorkspaceContent(activeWorkspace?.role);
+  const showTemplates = preferences.publicTemplates;
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState(PROJECT_COLORS[0]!);
   const [deadline, setDeadline] = useState("");
+  const [templateId, setTemplateId] = useState<(typeof STARTER_TEMPLATES)[number]["id"]>("blank");
 
   const reset = () => {
     setTitle("");
     setDescription("");
     setColor(PROJECT_COLORS[0]!);
     setDeadline("");
+    setTemplateId("blank");
+  };
+
+  const applyTemplate = (id: (typeof STARTER_TEMPLATES)[number]["id"]) => {
+    const template = STARTER_TEMPLATES.find((item) => item.id === id);
+    setTemplateId(id);
+    if (!template || id === "blank") return;
+    if (!title.trim()) setTitle(template.name);
+    setDescription(template.description);
   };
 
   const mutation = useMutation({
@@ -57,6 +78,10 @@ export function CreateProjectModal({ disabled }: CreateProjectModalProps) {
   const submit = () => {
     if (!activeWorkspace) {
       toast.error("Select a workspace first.");
+      return;
+    }
+    if (!canCreate) {
+      toast.error("Guests can view and comment only.");
       return;
     }
 
@@ -93,7 +118,7 @@ export function CreateProjectModal({ disabled }: CreateProjectModalProps) {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="hero" disabled={disabled || !activeWorkspace}>
+        <Button variant="hero" disabled={disabled || !activeWorkspace || !canCreate}>
           <Plus /> New project
         </Button>
       </DialogTrigger>
@@ -105,6 +130,31 @@ export function CreateProjectModal({ disabled }: CreateProjectModalProps) {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          {showTemplates ? (
+            <div className="space-y-2">
+              <Label>Template</Label>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {STARTER_TEMPLATES.map((template) => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    onClick={() => applyTemplate(template.id)}
+                    className={cn(
+                      "rounded-2xl border px-3 py-2.5 text-left transition-colors",
+                      templateId === template.id
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:bg-muted/50",
+                    )}
+                  >
+                    <p className="text-sm font-bold">{template.name}</p>
+                    <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
+                      {template.description || "Start from scratch."}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <div className="space-y-2">
             <Label htmlFor="project-title">Title</Label>
             <Input
@@ -168,7 +218,7 @@ export function CreateProjectModal({ disabled }: CreateProjectModalProps) {
             variant="hero"
             className="w-full sm:w-auto"
             onClick={submit}
-            disabled={mutation.isPending || !activeWorkspace}
+            disabled={mutation.isPending || !activeWorkspace || !canCreate}
           >
             {mutation.isPending ? "Creating..." : "Create project"}
           </Button>

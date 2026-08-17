@@ -4,6 +4,7 @@ import { FolderKanban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { canEditWorkspaceContent } from "@/services/workspace.service";
 import { CreateProjectModal } from "@/components/projects/CreateProjectModal";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import { ProjectFilters } from "@/components/projects/ProjectFilters";
@@ -61,7 +62,7 @@ export function ProjectsPage() {
               : "Choose a workspace to view its projects."}
           </p>
         </div>
-        <CreateProjectModal disabled={!activeWorkspace} />
+        <CreateProjectModal disabled={!activeWorkspace || !canEditWorkspaceContent(activeWorkspace.role)} />
       </header>
 
       <ProjectFilters

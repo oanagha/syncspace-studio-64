@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { usePreferences } from "@/hooks/usePreferences";
 import { Loader2, TriangleAlert } from "lucide-react";
-import { Bell, Link2, Palette, Shield, SlidersHorizontal, User } from "lucide-react";
+import { Bell, Palette, Shield, SlidersHorizontal, User } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,7 +62,7 @@ const tabs = [
   { v: "notifications", label: "Notifications", icon: Bell },
   { v: "appearance", label: "Appearance", icon: Palette },
   { v: "workspace", label: "Workspace", icon: SlidersHorizontal },
-  { v: "connected", label: "Connected", icon: Link2 },
+  // { v: "connected", label: "Connected", icon: Link2 },
 ] as const;
 
 type SettingsTab = (typeof tabs)[number]["v"];
@@ -107,12 +107,12 @@ export const Route = createFileRoute("/app/settings")({
   component: SettingsPage,
 });
 
-const connectedAccounts = [
-  { key: "slack" as const, name: "Slack", desc: "Post task updates to #product" },
-  { key: "github" as const, name: "GitHub", desc: "Link pull requests to tasks" },
-  { key: "figma" as const, name: "Figma", desc: "Embed live design previews" },
-  { key: "googleDrive" as const, name: "Google Drive", desc: "Attach docs without uploading" },
-];
+// const connectedAccounts = [
+//   { key: "slack" as const, name: "Slack", desc: "Post task updates to #product" },
+//   { key: "github" as const, name: "GitHub", desc: "Link pull requests to tasks" },
+//   { key: "figma" as const, name: "Figma", desc: "Embed live design previews" },
+//   { key: "googleDrive" as const, name: "Google Drive", desc: "Attach docs without uploading" },
+// ];
 
 function SettingsPage() {
   const navigate = useNavigate({ from: Route.fullPath });
@@ -171,7 +171,12 @@ function SettingsPage() {
           ...(patch.email ? { email: next.email } : {}),
         });
       }
-      if (patch.workspaceName && activeWorkspace) {
+      if (
+        patch.workspaceName ||
+        patch.guestAccess !== undefined ||
+        patch.require2fa !== undefined ||
+        patch.publicTemplates !== undefined
+      ) {
         await fetchWorkspaces().catch(() => undefined);
       }
       toast.success(success);
@@ -383,6 +388,15 @@ function SettingsPage() {
 
         <TabsContent value="security">
           <Card title="Security" desc="Protect your account and active sessions.">
+            {preferences.require2fa && !preferences.twoFactor ? (
+              <Alert className="border-warning/50 bg-warning/15 text-foreground [&>svg]:text-warning">
+                <TriangleAlert />
+                <AlertTitle>Two-factor authentication required</AlertTitle>
+                <AlertDescription>
+                  This workspace requires 2FA. Enable it below to keep using the workspace.
+                </AlertDescription>
+              </Alert>
+            ) : null}
             <div className="grid gap-4 sm:grid-cols-2">
               <FieldInput
                 id="cp"
@@ -407,12 +421,15 @@ function SettingsPage() {
                   {draft.twoFactor
                     ? "Enabled — you’ll need an authenticator code when signing in."
                     : "Add an authenticator app for a 6-digit code at sign-in."}
+                  {preferences.require2fa
+                    ? " This workspace requires 2FA, so it can’t be turned off until that setting is disabled."
+                    : ""}
                 </p>
               </div>
               {draft.twoFactor ? (
                 <Button
                   variant="outline"
-                  disabled={twoFactorBusy || loading}
+                  disabled={twoFactorBusy || loading || preferences.require2fa}
                   onClick={() => {
                     setDisablePassword("");
                     setDisableCode("");
@@ -833,21 +850,23 @@ function SettingsPage() {
               label="Guest client access"
               desc="Allow comment-only guests on shared projects."
               checked={draft.guestAccess}
-              onCheckedChange={() => setComingSoonFeature("Guest client access")}
+              onCheckedChange={(guestAccess) => setDraft((current) => ({ ...current, guestAccess }))}
               disabled={!canEditWorkspace}
             />
             <Toggle
               label="Require 2FA for all members"
               desc="Require every member to enable two-factor authentication."
               checked={draft.require2fa}
-              onCheckedChange={() => setComingSoonFeature("Required 2FA for all members")}
+              onCheckedChange={(require2fa) => setDraft((current) => ({ ...current, require2fa }))}
               disabled={!canEditWorkspace}
             />
             <Toggle
               label="Public project templates"
-              desc="Let members publish templates to the gallery."
+              desc="Let members start projects from workspace templates."
               checked={draft.publicTemplates}
-              onCheckedChange={() => setComingSoonFeature("Public project templates")}
+              onCheckedChange={(publicTemplates) =>
+                setDraft((current) => ({ ...current, publicTemplates }))
+              }
               disabled={!canEditWorkspace}
             />
             {!canEditWorkspace && (
@@ -864,6 +883,9 @@ function SettingsPage() {
                 savePreferences({
                   workspaceId: activeWorkspace.id,
                   workspaceName: draft.workspaceName,
+                  guestAccess: draft.guestAccess,
+                  require2fa: draft.require2fa,
+                  publicTemplates: draft.publicTemplates,
                 });
               }}
             />
@@ -888,7 +910,7 @@ function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="connected">
+        {/* <TabsContent value="connected">
           <Card title="Connected accounts" desc="Bring context from the tools you already use.">
             {comingSoonFeature ? <ComingSoonNotice feature={comingSoonFeature} /> : null}
             {connectedAccounts.map((account) => (
@@ -911,7 +933,7 @@ function SettingsPage() {
               </div>
             ))}
           </Card>
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
 
       <ConfirmDeleteDialog

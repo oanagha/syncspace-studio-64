@@ -20,6 +20,10 @@ export function canRenameWorkspace(role?: WorkspaceRole | null) {
   return role === "Owner" || role === "Admin";
 }
 
+export function canEditWorkspaceContent(role?: WorkspaceRole | null) {
+  return role === "Owner" || role === "Admin" || role === "Member";
+}
+
 export function canDeleteWorkspace(role?: WorkspaceRole | null) {
   return role === "Owner";
 }
