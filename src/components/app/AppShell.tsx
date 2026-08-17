@@ -288,7 +288,7 @@ export function AppShell() {
 
         {!collapsed && (
           <div className="m-3 rounded-3xl bg-primary-soft p-4">
-            <p className="text-sm font-bold text-primary">Trial ends in 6 days</p>
+            <p className="text-sm font-bold text-primary">Trial ends in 14 days</p>
             <p className="mt-1 text-xs text-muted-foreground">
               Upgrade to Pro to keep unlimited projects and analytics.
             </p>
