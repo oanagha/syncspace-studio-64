@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useLayoutEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { usePreferences } from "@/hooks/usePreferences";
 import { Loader2, TriangleAlert } from "lucide-react";
@@ -28,7 +30,8 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { ApiRequestError } from "@/lib/api";
-import { updateStoredUser } from "@/lib/auth";
+import { getToken, updateStoredUser } from "@/lib/auth";
+import { signOutClient } from "@/lib/sign-out";
 import { ConfirmDeleteDialog, DeleteEntityName } from "@/components/ux/ConfirmDeleteDialog";
 import {
   canDeleteWorkspace,
@@ -55,6 +58,12 @@ import {
   setupTwoFactor,
   type TwoFactorSetup,
 } from "@/services/twofactor.service";
+import {
+  listSessions,
+  revokeSession,
+  sessionsQueryKey,
+  type AuthSession,
+} from "@/services/session.service";
 
 const tabs = [
   { v: "profile", label: "Profile", icon: User },
@@ -134,6 +143,15 @@ function SettingsPage() {
   const [disableCode, setDisableCode] = useState("");
   const [twoFactorBusy, setTwoFactorBusy] = useState(false);
   const [comingSoonFeature, setComingSoonFeature] = useState<string | null>(null);
+  const [revokeSessionTarget, setRevokeSessionTarget] = useState<AuthSession | null>(null);
+  const [revokeSessionBusy, setRevokeSessionBusy] = useState(false);
+  const queryClient = useQueryClient();
+  const sessionsQuery = useQuery({
+    queryKey: sessionsQueryKey(),
+    queryFn: listSessions,
+    enabled: activeTab === "security" && Boolean(getToken()),
+    refetchOnWindowFocus: false,
+  });
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const canEditWorkspace = canRenameWorkspace(activeWorkspace?.role);
   const canRemoveWorkspace = canDeleteWorkspace(activeWorkspace?.role);
@@ -178,6 +196,9 @@ function SettingsPage() {
         patch.publicTemplates !== undefined
       ) {
         await fetchWorkspaces().catch(() => undefined);
+      }
+      if (patch.newPassword) {
+        void queryClient.invalidateQueries({ queryKey: sessionsQueryKey() });
       }
       toast.success(success);
       return next;
@@ -254,6 +275,43 @@ function SettingsPage() {
       toast.success(`Workspace “${name}” deleted`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete workspace.");
+    }
+  };
+
+  const runRevokeSession = async () => {
+    const session = revokeSessionTarget;
+    if (!session || revokeSessionBusy) return;
+    setRevokeSessionBusy(true);
+    let signedOut = false;
+    try {
+      if (session.id === "local") {
+        signedOut = true;
+        await signOutClient(queryClient);
+        toast.success("Signed out of this browser");
+        void navigate({ to: "/signin", replace: true });
+        return;
+      }
+
+      const result = await revokeSession(session.id);
+      if (result.current || session.current) {
+        signedOut = true;
+        await signOutClient(queryClient);
+        toast.success("Signed out of this browser");
+        void navigate({ to: "/signin", replace: true });
+        return;
+      }
+
+      setRevokeSessionTarget(null);
+      toast.success("Session revoked");
+      await queryClient.invalidateQueries({ queryKey: sessionsQueryKey() });
+    } catch (err) {
+      toast.error(
+        err instanceof ApiRequestError || err instanceof Error
+          ? err.message
+          : "Could not revoke session.",
+      );
+    } finally {
+      if (!signedOut) setRevokeSessionBusy(false);
     }
   };
 
@@ -474,24 +532,30 @@ function SettingsPage() {
             <Separator />
             <div className="space-y-3">
               <p className="text-sm font-bold">Active sessions</p>
-              {[["This browser", "Current session"]].map(([d, t]) => (
-                <div
-                  key={d}
-                  className="flex items-center justify-between rounded-2xl border border-border px-4 py-3"
-                >
-                  <div>
-                    <p className="text-sm font-semibold">{d}</p>
-                    <p className="text-xs text-muted-foreground">{t}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toast.success(`Signed out of ${d}`)}
+              {sessionsQuery.isLoading ? (
+                <p className="text-sm text-muted-foreground">Loading sessions…</p>
+              ) : sessionsQuery.isError ? (
+                <p className="text-sm text-destructive">Could not load sessions. Try again later.</p>
+              ) : (
+                sessionsForDisplay(sessionsQuery.data).map((session) => (
+                  <div
+                    key={session.id}
+                    className="flex items-center justify-between rounded-2xl border border-border px-4 py-3"
                   >
-                    Revoke
-                  </Button>
-                </div>
-              ))}
+                    <div>
+                      <p className="text-sm font-semibold">{session.label}</p>
+                      <p className="text-xs text-muted-foreground">{sessionLastSeenLabel(session)}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setRevokeSessionTarget(session)}
+                    >
+                      Revoke
+                    </Button>
+                  </div>
+                ))
+              )}
             </div>
             <SaveRow
               saving={saving}
@@ -950,6 +1014,33 @@ function SettingsPage() {
       />
 
       <ConfirmDeleteDialog
+        open={Boolean(revokeSessionTarget)}
+        onOpenChange={(open) => {
+          if (!open && !revokeSessionBusy) setRevokeSessionTarget(null);
+        }}
+        title={
+          revokeSessionTarget?.current || revokeSessionTarget?.id === "local"
+            ? "Sign out of this browser?"
+            : "Revoke this session?"
+        }
+        description={
+          revokeSessionTarget?.current || revokeSessionTarget?.id === "local"
+            ? "You’ll need to sign in again on this device."
+            : `This signs out ${revokeSessionTarget?.label ?? "that device"} immediately.`
+        }
+        confirmLabel={
+          revokeSessionTarget?.current || revokeSessionTarget?.id === "local"
+            ? "Sign out"
+            : "Revoke session"
+        }
+        tone="caution"
+        pending={revokeSessionBusy}
+        onConfirm={() => {
+          void runRevokeSession();
+        }}
+      />
+
+      <ConfirmDeleteDialog
         open={deleteWorkspaceOpen}
         onOpenChange={setDeleteWorkspaceOpen}
         title="Delete workspace?"
@@ -968,6 +1059,31 @@ function SettingsPage() {
       />
     </div>
   );
+}
+
+function localFallbackSession(): AuthSession {
+  const now = new Date().toISOString();
+  return {
+    id: "local",
+    current: true,
+    label: "This browser",
+    createdAt: now,
+    lastSeenAt: now,
+    expiresAt: now,
+  };
+}
+
+function sessionsForDisplay(sessions: AuthSession[] | undefined): AuthSession[] {
+  if (!sessions || sessions.length === 0) return [localFallbackSession()];
+  if (sessions.some((session) => session.current)) return sessions;
+  return [localFallbackSession(), ...sessions];
+}
+
+function sessionLastSeenLabel(session: AuthSession): string {
+  if (session.current) return "Current session";
+  const date = new Date(session.lastSeenAt);
+  if (Number.isNaN(date.getTime())) return "Last active recently";
+  return `Last active ${formatDistanceToNow(date, { addSuffix: true })}`;
 }
 
 function Card({

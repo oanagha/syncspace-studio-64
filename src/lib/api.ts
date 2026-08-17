@@ -1,4 +1,4 @@
-import { getToken } from "@/lib/auth";
+import { clearAuth, getToken } from "@/lib/auth";
 
 function getApiBaseUrl() {
   const fromEnv = import.meta.env["VITE_API_URL"];
@@ -16,6 +16,25 @@ function getApiBaseUrl() {
 }
 
 const API_BASE_URL = getApiBaseUrl();
+
+const PUBLIC_AUTH_PATHS = [
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/forgot-password",
+  "/api/auth/verify-otp",
+  "/api/auth/reset-password",
+  "/api/auth/verify-2fa",
+];
+
+function maybeEndRevokedSession(path: string, status: number) {
+  if (status !== 401 || typeof window === "undefined") return;
+  if (PUBLIC_AUTH_PATHS.some((prefix) => path.startsWith(prefix))) return;
+  if (!getToken()) return;
+  clearAuth();
+  if (window.location.pathname.startsWith("/app")) {
+    window.location.replace("/signin");
+  }
+}
 
 type ApiError = {
   message?: string;
@@ -46,7 +65,7 @@ function authHeaders(extra?: HeadersInit): Headers {
   return headers;
 }
 
-async function parseResponse<T>(response: Response): Promise<T> {
+async function parseResponse<T>(response: Response, path: string): Promise<T> {
   const raw = await response.text();
   let data: T | ApiError | null = null;
 
@@ -59,6 +78,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
   }
 
   if (!response.ok) {
+    maybeEndRevokedSession(path, response.status);
     const message =
       data && typeof data === "object"
         ? ("message" in data && data.message) || ("error" in data && data.error) || "Request failed"
@@ -79,7 +99,7 @@ export async function apiGet<T>(path: string): Promise<T> {
     headers: authHeaders(),
   });
 
-  return parseResponse<T>(response);
+  return parseResponse<T>(response, path);
 }
 
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
@@ -89,7 +109,7 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
 
-  return parseResponse<T>(response);
+  return parseResponse<T>(response, path);
 }
 
 export async function apiPut<T>(path: string, body: unknown): Promise<T> {
@@ -99,7 +119,7 @@ export async function apiPut<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
 
-  return parseResponse<T>(response);
+  return parseResponse<T>(response, path);
 }
 
 export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
@@ -109,7 +129,7 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
 
-  return parseResponse<T>(response);
+  return parseResponse<T>(response, path);
 }
 
 export async function apiDelete<T>(path: string, body?: unknown): Promise<T> {
@@ -123,7 +143,7 @@ export async function apiDelete<T>(path: string, body?: unknown): Promise<T> {
 
   const response = await fetch(`${API_BASE_URL}${path}`, init);
 
-  return parseResponse<T>(response);
+  return parseResponse<T>(response, path);
 }
 
 /** Multipart upload — do not set Content-Type (browser sets boundary). */
@@ -138,7 +158,7 @@ export async function apiUploadFormData<T>(path: string, formData: FormData): Pr
     body: formData,
   });
 
-  return parseResponse<T>(response);
+  return parseResponse<T>(response, path);
 }
 
 export function getApiOrigin() {

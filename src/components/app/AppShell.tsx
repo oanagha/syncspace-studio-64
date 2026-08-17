@@ -37,7 +37,8 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { clearAuth, getToken, getUser } from "@/lib/auth";
+import { getToken, getUser } from "@/lib/auth";
+import { signOutClient } from "@/lib/sign-out";
 import {
   formatNotificationTime,
   listNotifications,
@@ -438,8 +439,9 @@ export function AppShell() {
                 <DropdownMenuItem
                   className="rounded-xl"
                   onSelect={() => {
-                    clearAuth();
-                    navigate({ to: "/" });
+                    void signOutClient(queryClient).then(() => {
+                      navigate({ to: "/" });
+                    });
                   }}
                 >
                   Sign out
